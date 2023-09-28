@@ -52,6 +52,31 @@ task('deploy')
     return messageBox;
 });
 
+// Read message from the MessageBox.
+task('message')
+  .addPositionalParam('address', 'contract address')
+  .setAction(async (args, hre) => {
+    await hre.run('compile');
+
+    const messageBox = await hre.ethers.getContractAt('MessageBox', args.address);
+    const message = await messageBox.message();
+    const author = await messageBox.author();
+    console.log(`stored message is: ${message}, author: ${author}`);
+});
+
+// Set message.
+task('setMessage')
+  .addPositionalParam('address', 'contract address')
+  .addPositionalParam('message', 'message to set')
+  .setAction(async (args, hre) => {
+    await hre.run('compile');
+
+    const messageBox = await hre.ethers.getContractAt('MessageBox', args.address);
+    const tx = await messageBox.setMessage(args.message);
+    const receipt = await tx.wait();
+    console.log(`Success! Transaction hash: ${receipt.transactionHash}`);
+});
+
 // Hardhat Node and sapphire-dev test mnemonic.
 const TEST_HDWALLET = {
   mnemonic: "test test test test test test test test test test test junk",
