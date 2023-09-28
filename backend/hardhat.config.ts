@@ -68,10 +68,15 @@ task('message')
 task('setMessage')
   .addPositionalParam('address', 'contract address')
   .addPositionalParam('message', 'message to set')
+  .addFlag('unencrypted', 'submit unencrypted transaction')
   .setAction(async (args, hre) => {
     await hre.run('compile');
 
-    const messageBox = await hre.ethers.getContractAt('MessageBox', args.address);
+    let messageBox = await hre.ethers.getContractAt('MessageBox', args.address);
+    if (args.unencrypted) {
+      const uwProvider = new JsonRpcProvider(hre.network.config.url);
+      messageBox = await hre.ethers.getContractAt('MessageBox', args.address, new hre.ethers.Wallet(accounts[0], uwProvider));
+    }
     const tx = await messageBox.setMessage(args.message);
     const receipt = await tx.wait();
     console.log(`Success! Transaction hash: ${receipt.transactionHash}`);
