@@ -14,10 +14,11 @@ contract MessageBox {
     }
 
     function setPrivateMessage(address in_recipient, string calldata in_message) external {
-        // TASK: Implement setting the private message and author.
+        privateMessage[in_recipient] = in_message;
+        privateAuthor[in_recipient] = msg.sender;
     }
 
     function readPrivateMessage() external view returns (string memory, address) {
-        // TASK: Return the private message of the caller and its author.
+        return (privateMessage[msg.sender], privateAuthor[msg.sender]);
     }
 }
