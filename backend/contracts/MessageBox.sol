@@ -14,7 +14,7 @@ contract MessageBox {
     bytes captchaSeed;
 
     constructor() {
-        // TASK: Generate random seed and store it to captchaSeed.
+        captchaSeed = Sapphire.randomBytes(32, "");
     }
 
     function setMessage(string calldata in_message) external {
@@ -23,11 +23,15 @@ contract MessageBox {
     }
 
     function computeCaptcha() public view returns (uint, uint) {
-        // TASK: Derive two numbers from captchaSeed and messageCounter.
+        bytes memory a = abi.encode(captchaSeed, messageCounter, "0");
+        bytes memory b = abi.encode(captchaSeed, messageCounter, "1");
+
+        return (uint(keccak256(a)) % 100, uint(keccak256(b)) % 100);
     }
 
     function checkCaptcha(address in_recipient, uint in_captcha) private view returns (bool) {
-        // TASK: Compare, if provided captcha matches the expected one.
+        (uint a, uint b) = computeCaptcha();
+        return ((a+b) == in_captcha);
     }
 
     function setPrivateMessage(address in_recipient, string calldata in_message, uint captcha) external {
