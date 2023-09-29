@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 
 import type { MessageBox } from '../contracts';
 import {useMessageBox, useUnwrappedMessageBox} from '../contracts';
+import { useGasless } from '../contracts';
 import { Network, useEthereumStore } from '../stores/ethereum';
 import AppButton from '@/components/AppButton.vue';
 import MessageLoader from '@/components/MessageLoader.vue';
@@ -10,6 +11,7 @@ import MessageLoader from '@/components/MessageLoader.vue';
 const eth = useEthereumStore();
 const messageBox = useMessageBox();
 const uwMessageBox = useUnwrappedMessageBox();
+const gasless = useGasless();
 
 const errors = ref<string[]>([]);
 const message = ref('');
@@ -17,6 +19,7 @@ const author = ref('');
 const newMessage = ref('');
 const isLoading = ref(true);
 const isSettingMessage = ref(false);
+const isGasless = ref(false);
 
 const privateMessage = ref('');
 const privateAuthor = ref('');
@@ -53,7 +56,18 @@ async function setMessage(e: Event): Promise<void> {
   try {
     errors.value.splice(0, errors.value.length);
     isLoading.value = true;
-    await messageBox.value.setMessage(newMessage.value);
+
+    if (!isGasless.value) {
+      await messageBox.value.setMessage(newMessage.value);
+    } else {
+      const innercall = messageBox.value.interface.encodeFunctionData(
+          '', // TASK: Function name goes here.
+          [] // TASK: Function parameter(s) go here.
+      );
+      const tx = await gasless.value.makeProxyTx(messageBox.value.address, innercall);
+      const resp = await eth.unwrappedProvider.sendTransaction(tx);
+      const receipt = await eth.unwrappedProvider.waitForTransaction(resp.hash);
+    }
   } catch (e: any) {
     errors.value.push(`Failed to set message: ${e.message ?? JSON.stringify(e)}`);
     console.error(e);
@@ -139,6 +153,9 @@ onMounted(async () => {
         <span class="text-red-500">*</span>
       </label>
       <input type="text" id="newMessageText" class="peer" placeholder=" " v-model="newMessage" required />
+
+      <input type="checkbox" id="checkbox" v-model="isGasless">
+      <label for="checkbox">Gasless transaction</label><br/>
 
       <AppButton type="submit" variant="primary" :disabled="isSettingMessage">
         <span v-if="isSettingMessage">Setting…</span>

@@ -4,6 +4,8 @@ import { computed } from 'vue';
 
 import { type MessageBox, MessageBox__factory } from '@oasisprotocol/demo-starter-backend';
 export type { MessageBox } from '@oasisprotocol/demo-starter-backend';
+import { type Gasless, Gasless__factory } from '@oasisprotocol/demo-starter-backend';
+export type { Gasless } from '@oasisprotocol/demo-starter-backend';
 
 import { useEthereumStore } from './stores/ethereum';
 
@@ -27,5 +29,13 @@ export function useUnwrappedMessageBox(): ComputedRef<MessageBox> {
   const addr = import.meta.env.VITE_MESSAGE_BOX_ADDR!;
   return computed(() => {
     return MessageBox__factory.connect(addr, eth.unwrappedSigner ?? eth.unwrappedProvider);
+  });
+}
+
+export function useGasless(): ComputedRef<Gasless> {
+  const eth = useEthereumStore();
+  const addr = import.meta.env.VITE_GASLESS_ADDR!;
+  return computed(() => {
+    return Gasless__factory.connect(addr, eth.signer ?? eth.provider);
   });
 }
