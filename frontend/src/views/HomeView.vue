@@ -31,8 +31,10 @@ async function fetchMessage(): Promise<Record<string, string>> {
   return { message, author };
 }
 
+
 async function fetchPrivateMessage(): Promise<Record<string, string>> {
-  // TASK: Implement fetching a private message.
+  const [ message, author ] = await messageBox.value.readPrivateMessage();
+  return { message, author };
 }
 
 async function setMessage(e: Event): Promise<void> {
@@ -54,7 +56,21 @@ async function setMessage(e: Event): Promise<void> {
 }
 
 async function setPrivateMessage(e: Event): Promise<void> {
-  // TASK: Implement setting a private message by passing newPrivateMessage.value and newPrivateMessageRecipient.value.
+  if (e.target instanceof HTMLFormElement) {
+    e.target.checkValidity();
+    if (!e.target.reportValidity()) return;
+  }
+  e.preventDefault();
+  try {
+    errors.value.splice(0, errors.value.length);
+    isLoading.value = true;
+    await messageBox.value.setPrivateMessage(newPrivateMessageRecipient.value, newPrivateMessage.value);
+  } catch (e: any) {
+    errors.value.push(`Failed to set message: ${e.message ?? JSON.stringify(e)}`);
+    console.error(e);
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 onMounted(async () => {
