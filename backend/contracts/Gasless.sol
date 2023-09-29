@@ -34,8 +34,15 @@ contract Gasless {
     {
         bytes memory data = abi.encode(innercallAddr, innercall);
 
-        // TASK: Generate inner eth transaction with proper fields.
-        EIP155Signer.EthTx memory ethTx = EIP155Signer.EthTx();
+        EIP155Signer.EthTx memory ethTx = EIP155Signer.EthTx({
+            nonce: kp.nonce,
+            gasPrice: 100_000_000_000,
+            gasLimit: 250000,
+            to: address(this),
+            value: 0,
+            data: abi.encodeCall(this.proxy, data),
+            chainId: block.chainid
+        });
 
         // Call will invoke proxy().
         return
