@@ -39,6 +39,7 @@ task(TASK_EXPORT_ABIS, async (_args, hre) => {
 
 // Unencrypted contract deployment.
 task('deploy')
+  .addParam('gaslessPrivateKey', 'private key used for signing gasless transactions', '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a')
   .setAction(async (args, hre) => {
     await hre.run('compile');
 
@@ -49,7 +50,22 @@ task('deploy')
     await messageBox.deployed();
 
     console.log(`MessageBox address: ${messageBox.address}`);
-    return messageBox;
+
+    const Gasless = await hre.ethers.getContractFactory('Gasless', new hre.ethers.Wallet(accounts[0], uwProvider));
+    const gasless = await Gasless.deploy();
+    await gasless.deployed();
+
+    console.log(`Gasless address: ${gasless.address}`);
+
+    await gasless.setKeypair({
+      addr: ethers.utils.computeAddress(args.gaslessPrivateKey),
+      secret: Uint8Array.from(
+        Buffer.from(args.gaslessPrivateKey.substring(2), 'hex'),
+      ),
+      nonce: ethers.provider.getTransactionCount(ethers.utils.computeAddress(args.gaslessPrivateKey)),
+    });
+
+    return { messageBox, gasless };
 });
 
 // Read message from the MessageBox.

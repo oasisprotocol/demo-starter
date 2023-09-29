@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { config, ethers } from "hardhat";
 import {JsonRpcProvider} from "@ethersproject/providers";
 
 describe("MessageBox", function () {
@@ -8,6 +8,32 @@ describe("MessageBox", function () {
     const messageBox = await MessageBox_factory.deploy();
     await messageBox.deployed();
     return { messageBox };
+  }
+
+  async function deployGasless() {
+    const Gasless = await ethers.getContractFactory('Gasless');
+    const gasless = await Gasless.deploy();
+
+    // Derive the private key of the 1st (counting from 0) builtin hardhat test account.
+    const accounts = config.networks.hardhat.accounts;
+    const wallet1 = ethers.Wallet.fromMnemonic(
+      accounts.mnemonic,
+      accounts.path + `/1`,
+    );
+    const privateKey1 = wallet1.privateKey;
+
+    // Use it as the relayer private key.
+    await expect(
+      await gasless.setKeypair({
+        addr: wallet1.address,
+        secret: Uint8Array.from(
+          Buffer.from(wallet1.privateKey.substring(2), 'hex'),
+        ),
+        nonce: ethers.provider.getTransactionCount(wallet1.address),
+      }),
+    ).to.be.ok;
+
+    return { gasless };
   }
 
   it("Should send message", async function () {
@@ -67,4 +93,22 @@ describe("MessageBox", function () {
     expect(c).to.not.equal(a);
     expect(d).to.not.equal(b);
   });
+
+  it("Should send gasless message", async function () {
+    if ((await ethers.provider.getNetwork()).chainId == 1337) { // Requires encryption, RNG etc.
+      this.skip();
+    }
+    const { messageBox } = await deployMessageBox();
+    const { gasless } = await deployGasless();
+
+    const innercall = messageBox.interface.encodeFunctionData('setMessage', [
+      'Hello, gratis world!',
+    ]);
+    const tx = await gasless.makeProxyTx(messageBox.address, innercall);
+
+    const plainProvider = new ethers.providers.JsonRpcProvider(ethers.provider.connection);
+    const plainResp = await plainProvider.sendTransaction(tx);
+
+    const receipt = await ethers.provider.waitForTransaction(plainResp.hash);
+    if (!receipt || receipt.status != 1) throw new Error('tx failed');  });
 });
