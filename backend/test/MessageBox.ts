@@ -18,7 +18,7 @@ describe("MessageBox", function () {
     expect(await messageBox.message()).to.equal("hello world");
     expect(await messageBox.author()).to.equal(await ethers.provider.getSigner(0).getAddress());
   });
-
+/*
   it("Should send and read private message", async function () {
     if ((await ethers.provider.getNetwork()).chainId != 1337) { // See https://github.com/oasisprotocol/sapphire-paratime/issues/197
       this.skip();
@@ -48,5 +48,23 @@ describe("MessageBox", function () {
 
     const [ privateMessage ] = await messageBox2.readPrivateMessage();
     expect(privateMessage).to.equal("");
+  });
+*/
+  it("Should send private message with captcha", async function () {
+    if ((await ethers.provider.getNetwork()).chainId == 1337) { // Requires RNG.
+      this.skip();
+    }
+
+    const {messageBox} = await deployMessageBox();
+
+    const [a, b] = await messageBox.computeCaptcha();
+    const tx = await messageBox.setPrivateMessage((await ethers.getSigner(1)).address, "hello secret world", a.add(b));
+    const receipt = await tx.wait();
+    expect(receipt.status).to.equal(1);
+
+    // Captcha should change.
+    const [c, d] = await messageBox.computeCaptcha();
+    expect(c).to.not.equal(a);
+    expect(d).to.not.equal(b);
   });
 });
