@@ -18,11 +18,21 @@ const newMessage = ref('');
 const isLoading = ref(true);
 const isSettingMessage = ref(false);
 
+const privateMessage = ref('');
+const privateAuthor = ref('');
+const newPrivateMessage = ref('');
+const newPrivateMessageRecipient = ref('');
+const isSettingPrivateMessage = ref(false);
+
 async function fetchMessage(): Promise<Record<string, string>> {
   const message = await uwMessageBox.value.message();
   const author = await uwMessageBox.value.author();
 
   return { message, author };
+}
+
+async function fetchPrivateMessage(): Promise<Record<string, string>> {
+  // TASK: Implement fetching a private message.
 }
 
 async function setMessage(e: Event): Promise<void> {
@@ -43,6 +53,10 @@ async function setMessage(e: Event): Promise<void> {
   }
 }
 
+async function setPrivateMessage(e: Event): Promise<void> {
+  // TASK: Implement setting a private message by passing newPrivateMessage.value and newPrivateMessageRecipient.value.
+}
+
 onMounted(async () => {
   await eth.connect();
   await eth.switchNetwork(Network.FromConfig);
@@ -51,6 +65,11 @@ onMounted(async () => {
     fetchMessage().then((ret) => {
       message.value = ret.message;
       author.value = ret.author;
+      isLoading.value = false;
+    }),
+    fetchPrivateMessage().then((ret) => {
+      privateMessage.value = ret.message;
+      privateAuthor.value = ret.author;
       isLoading.value = false;
     }),
   ]);
@@ -72,6 +91,19 @@ onMounted(async () => {
     </div>
     <div v-else><MessageLoader/></div>
 
+    <br/>
+    <p class="text-base">Private message:</p>
+    <div v-if="!isLoading">
+      <p class="text-base">{{ privateMessage }}</p>
+    </div>
+    <div v-else><MessageLoader/></div>
+    <p class="text-base">Private message author:</p>
+    <div v-if="!isLoading">
+      <p class="text-base">{{ privateAuthor }}</p>
+    </div>
+    <div v-else><MessageLoader/></div>
+    <br/>
+
     <form @submit="setMessage">
       <label
           for="newMessageText"
@@ -85,6 +117,31 @@ onMounted(async () => {
       <AppButton type="submit" variant="primary" :disabled="isSettingMessage">
         <span v-if="isSettingMessage">Setting…</span>
         <span v-else>Set Message</span>
+      </AppButton>
+    </form>
+
+    <form @submit="setPrivateMessage">
+      <label
+          for="newPrivateMessageRecipient"
+          class="peer-focus:text-primaryDark peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5"
+      >
+        New private message recipient:
+        <span class="text-red-500">*</span>
+      </label>
+      <input type="text" id="newPrivateMessageRecipient" class="peer" placeholder=" " v-model="newPrivateMessageRecipient" required />
+
+      <label
+          for="newPrivateMessageText"
+          class="peer-focus:text-primaryDark peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5"
+      >
+        New private message:
+        <span class="text-red-500">*</span>
+      </label>
+      <input type="text" id="newPrivateMessageText" class="peer" placeholder=" " v-model="newPrivateMessage" required />
+
+      <AppButton type="submit" variant="primary" :disabled="isSettingPrivateMessage">
+        <span v-if="isSettingPrivateMessage">Setting…</span>
+        <span v-else>Set Private Message</span>
       </AppButton>
     </form>
   </section>
