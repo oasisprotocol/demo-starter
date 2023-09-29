@@ -26,7 +26,13 @@ interface Message {
   author: string;
 }
 
-async function fetchMessage(): Promise<Message> {
+const privateMessage = ref('');
+const privateAuthor = ref('');
+const newPrivateMessage = ref('');
+const newPrivateMessageRecipient = ref('');
+const isSettingPrivateMessage = ref(false);
+
+async function fetchMessage(): Promise<Record<string, string>> {
   const message = await uwMessageBox.value.message();
   const author = await uwMessageBox.value.author();
 
@@ -50,6 +56,9 @@ async function getMessage(): Promise<Message | null> {
   }
 
   return retrievedMessage;
+}
+
+async function fetchPrivateMessage(): Promise<Record<string, string>> {
 }
 
 async function setMessage(e: Event): Promise<void> {
@@ -83,6 +92,10 @@ async function setMessage(e: Event): Promise<void> {
 
 async function switchNetwork() {
   await eth.switchNetwork(Network.FromConfig);
+}
+
+async function setPrivateMessage(e: Event): Promise<void> {
+  // TASK: Implement setting a private message by passing newPrivateMessage.value and newPrivateMessageRecipient.value.
 }
 
 onMounted(async () => {
@@ -122,6 +135,19 @@ onMounted(async () => {
       Set your new message by filling the message field bellow.
     </p>
 
+    <br/>
+    <p class="text-base">Private message:</p>
+    <div v-if="!isLoading">
+      <p class="text-base">{{ privateMessage }}</p>
+    </div>
+    <div v-else><MessageLoader/></div>
+    <p class="text-base">Private message author:</p>
+    <div v-if="!isLoading">
+      <p class="text-base">{{ privateAuthor }}</p>
+    </div>
+    <div v-else><MessageLoader/></div>
+    <br/>
+
     <form @submit="setMessage">
       <div class="form-group">
         <input
@@ -154,6 +180,31 @@ onMounted(async () => {
           <li v-for="error in errors" :key="error">{{ error }}</li>
         </ul>
       </div>
+    </form>
+
+    <form @submit="setPrivateMessage">
+      <label
+          for="newPrivateMessageRecipient"
+          class="peer-focus:text-primaryDark peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5"
+      >
+        New private message recipient:
+        <span class="text-red-500">*</span>
+      </label>
+      <input type="text" id="newPrivateMessageRecipient" class="peer" placeholder=" " v-model="newPrivateMessageRecipient" required />
+
+      <label
+          for="newPrivateMessageText"
+          class="peer-focus:text-primaryDark peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5"
+      >
+        New private message:
+        <span class="text-red-500">*</span>
+      </label>
+      <input type="text" id="newPrivateMessageText" class="peer" placeholder=" " v-model="newPrivateMessage" required />
+
+      <AppButton type="submit" variant="primary" :disabled="isSettingPrivateMessage">
+        <span v-if="isSettingPrivateMessage">Setting…</span>
+        <span v-else>Set Private Message</span>
+      </AppButton>
     </form>
   </section>
   <section class="pt-5" v-else>
