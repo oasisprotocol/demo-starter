@@ -60,10 +60,9 @@ async function setMessage(e: Event): Promise<void> {
     if (!isGasless.value) {
       await messageBox.value.setMessage(newMessage.value);
     } else {
-      const innercall = messageBox.value.interface.encodeFunctionData(
-          '', // TASK: Function name goes here.
-          [] // TASK: Function parameter(s) go here.
-      );
+      const innercall = messageBox.value.interface.encodeFunctionData('setMessage', [
+        newMessage.value,
+      ]);
       const tx = await gasless.value.makeProxyTx(messageBox.value.address, innercall);
       const resp = await eth.unwrappedProvider.sendTransaction(tx);
       const receipt = await eth.unwrappedProvider.waitForTransaction(resp.hash);
