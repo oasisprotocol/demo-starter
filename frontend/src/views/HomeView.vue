@@ -23,6 +23,8 @@ const privateAuthor = ref('');
 const newPrivateMessage = ref('');
 const newPrivateMessageRecipient = ref('');
 const isSettingPrivateMessage = ref(false);
+const newPrivateCaptcha = ref('');
+const privateCaptcha = ref<Record<number, number>>([0, 0]);
 
 async function fetchMessage(): Promise<Record<string, string>> {
   const message = await uwMessageBox.value.message();
@@ -35,6 +37,11 @@ async function fetchMessage(): Promise<Record<string, string>> {
 async function fetchPrivateMessage(): Promise<Record<string, string>> {
   const [ message, author ] = await messageBox.value.readPrivateMessage();
   return { message, author };
+}
+
+async function fetchPrivateCaptcha(): Promise<Record<number, number>> {
+  const [ a, b ] = await uwMessageBox.value.computeCaptcha();
+  return [ a.toNumber(), b.toNumber() ];
 }
 
 async function setMessage(e: Event): Promise<void> {
@@ -64,7 +71,7 @@ async function setPrivateMessage(e: Event): Promise<void> {
   try {
     errors.value.splice(0, errors.value.length);
     isLoading.value = true;
-    await messageBox.value.setPrivateMessage(newPrivateMessageRecipient.value, newPrivateMessage.value);
+    await messageBox.value.setPrivateMessage(newPrivateMessageRecipient.value, newPrivateMessage.value, newPrivateCaptcha.value);
   } catch (e: any) {
     errors.value.push(`Failed to set message: ${e.message ?? JSON.stringify(e)}`);
     console.error(e);
@@ -87,6 +94,9 @@ onMounted(async () => {
       privateMessage.value = ret.message;
       privateAuthor.value = ret.author;
       isLoading.value = false;
+    }),
+    fetchPrivateCaptcha().then((ret) => {
+      privateCaptcha.value = ret;
     }),
   ]);
 });
@@ -154,6 +164,15 @@ onMounted(async () => {
         <span class="text-red-500">*</span>
       </label>
       <input type="text" id="newPrivateMessageText" class="peer" placeholder=" " v-model="newPrivateMessage" required />
+
+      <label
+          for="newPrivateCaptchaText"
+          class="peer-focus:text-primaryDark peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5"
+      >
+        {{ privateCaptcha[0] }} + {{ privateCaptcha[1] }} =
+        <span class="text-red-500">*</span>
+      </label>
+      <input type="text" id="newPrivateCaptchaText" class="peer" placeholder=" " v-model="newPrivateCaptcha" required />
 
       <AppButton type="submit" variant="primary" :disabled="isSettingPrivateMessage">
         <span v-if="isSettingPrivateMessage">Setting…</span>
