@@ -93,7 +93,6 @@ onMounted(async () => {
     <h1 class="capitalize text-2xl text-white font-bold mb-4">Demo starter</h1>
 
     <h2 class="capitalize text-xl text-white font-bold mb-4">Active message</h2>
-    <p class="text-base mb-10 text-white">Current active message.</p>
 
     <div class="message p-6 mb-6 rounded-xl border-2 border-gray-300" v-if="!isLoading">
       <div class="flex items-center justify-between">
