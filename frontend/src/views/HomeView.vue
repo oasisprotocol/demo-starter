@@ -70,6 +70,8 @@ async function setMessage(e: Event): Promise<void> {
 
       return retrievedMessage;
     });
+
+    newMessage.value = '';
   } catch (e: any) {
     errors.value.push(`Failed to set message: ${e.message ?? JSON.stringify(e)}`);
     console.error(e);
