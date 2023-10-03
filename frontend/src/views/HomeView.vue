@@ -19,6 +19,7 @@ const author = ref('');
 const newMessage = ref('');
 const isLoading = ref(true);
 const isSettingMessage = ref(false);
+const isCorrectNetworkSelected = ref<Boolean>(true);
 
 interface Message {
   message: string;
@@ -80,16 +81,23 @@ async function setMessage(e: Event): Promise<void> {
   }
 }
 
+async function switchNetwork() {
+  await eth.switchNetwork(Network.FromConfig);
+}
+
 onMounted(async () => {
   await eth.connect();
+  isCorrectNetworkSelected.value = eth.checkIsCorrectNetwork();
   await eth.switchNetwork(Network.FromConfig);
+  // Check again if the right network has been selected
+  isCorrectNetworkSelected.value = eth.checkIsCorrectNetwork();
 
   getMessage();
 });
 </script>
 
 <template>
-  <section class="pt-5">
+  <section class="pt-5" v-if="isCorrectNetworkSelected">
     <h1 class="capitalize text-2xl text-white font-bold mb-4">Demo starter</h1>
 
     <h2 class="capitalize text-xl text-white font-bold mb-4">Active message</h2>
@@ -147,6 +155,17 @@ onMounted(async () => {
         </ul>
       </div>
     </form>
+  </section>
+  <section class="pt-5" v-else>
+    <h2 class="capitalize text-white text-2xl font-bold mb-4">Invalid network detected</h2>
+    <p class="text-white text-base mb-20">
+      In order to continue to use the app, please switch to the correct chain, by clicking on the
+      bellow "Switch network" button
+    </p>
+
+    <div class="flex justify-center">
+      <AppButton variant="secondary" @click="switchNetwork">Switch network</AppButton>
+    </div>
   </section>
 </template>
 
