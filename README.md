@@ -65,20 +65,24 @@ npx hardhat deploy --network sapphire
 
 ## Frontend
 
-After compiling the backend, updating `.env.development` with the corresponding
-address and chain ID, move to the `frontend` folder to compile and
-Hot-Reload frontend for Development:
+After you compiled the backend, updated `.env.development` with the
+corresponding address and a chain ID, move to the `frontend` folder, compile
+and Hot-Reload frontend for Development:
 
 ```sh
 pnpm dev
 ```
 
-Navigate to http://localhost:5173, and you should be able to create a new poll.
+Navigate to http://localhost:5173 with your browser to view your dApp. Some
+browsers (e.g. Brave) may require https connection and a CA-signed certificate
+to access the wallet. In this case, read the section below on how to properly
+deploy your dApp.
 
 You can use one of the deployed test accounts and associated private key with
-MetaMask. If you use the same MetaMask accounts on fresh local networks, don't
-forget to *clear your account's activity* each time or manually specify the
-correct account nonce.
+MetaMask. If you use the same MetaMask accounts on fresh local networks such as
+Hardhat Node, Foundry Anvil or sapphire-dev docker image, don't forget to
+*clear your account's activity* each time or manually specify the correct
+account nonce.
 
 ### Frontend Deployment
 
@@ -88,7 +92,7 @@ You can build assets for deployment by running:
 pnpm build
 ```
 
-`dist` folder will contain the generated HTML artifacts.
+`dist` folder will contain the generated HTML files that can be hosted.
 
 #### Different Website Base
 

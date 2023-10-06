@@ -59,7 +59,7 @@ declare global {
     ethereum: Awaited<ReturnType<typeof detectEthereumProvider>> &
       ethers.providers.Web3Provider & {
         request(args: RequestArguments): Promise<unknown>;
-      };
+      } & { networkVersion: string };
   }
 }
 
@@ -128,6 +128,57 @@ export const useEthereumStore = defineStore('ethereum', () => {
     ethProvider.on('disconnect', () => (status.value = ConnectionStatus.Disconnected));
   }
 
+  function checkIsCorrectNetwork() {
+    return window.ethereum.networkVersion.toString() === Network.FromConfig.toString();
+  }
+
+  async function addNetwork(network: Network = Network.FromConfig) {
+    const eth = window.ethereum;
+
+    if (network == Network.SapphireTestnet) {
+      await eth.request({
+        method: 'wallet_addEthereumChain',
+        params: [
+          {
+            chainId: '0x5aff',
+            chainName: 'Sapphire Testnet',
+            nativeCurrency: { name: 'TEST', symbol: 'TEST', decimals: 18 },
+            rpcUrls: ['https://testnet.sapphire.oasis.dev/', 'wss://testnet.sapphire.oasis.dev/ws'],
+            blockExplorerUrls: ['https://explorer.stg.oasis.io/testnet/sapphire'],
+          },
+        ],
+      });
+    } else if (network === Network.SapphireMainnet) {
+      await eth.request({
+        method: 'wallet_addEthereumChain',
+        params: [
+          {
+            chainId: '0x5afe',
+            chainName: 'Sapphire Mainnet',
+            nativeCurrency: {
+              name: 'ROSE',
+              symbol: 'ROSE',
+              decimals: 18,
+            },
+            rpcUrls: ['https://sapphire.oasis.io/', 'wss://sapphire.oasis.io/ws'],
+            blockExplorerUrls: ['https://explorer.stg.oasis.io/mainnet/sapphire'],
+          },
+        ],
+      });
+    } else if (network === Network.SapphireLocalnet) {
+      await eth.request({
+        method: 'wallet_addEthereumChain',
+        params: [
+          {
+            chainId: '0x5afd',
+            chainName: 'Sapphire Localnet',
+            rpcUrls: ['http://localhost:8545'],
+          },
+        ],
+      });
+    }
+  }
+
   async function switchNetwork(network: Network) {
     const eth = window.ethereum;
     if (!eth || !provider.value) return;
@@ -141,64 +192,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
     } catch (e: any) {
       // This error code indicates that the chain has not been added to MetaMask.
       if ((e as any).code !== 4902) throw e;
-      if (network == Network.SapphireTestnet) {
-        try {
-          await eth.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: '0x5aff',
-                chainName: 'Sapphire Testnet',
-                nativeCurrency: { name: 'TEST', symbol: 'TEST', decimals: 18 },
-                rpcUrls: [
-                  'https://testnet.sapphire.oasis.dev/',
-                  'wss://testnet.sapphire.oasis.dev/ws',
-                ],
-                blockExplorerUrls: ['https://explorer.stg.oasis.io/testnet/sapphire'],
-              },
-            ],
-          });
-        } catch (e: any) {
-          throw new Error(e);
-        }
-      } else if (network === Network.SapphireMainnet) {
-        try {
-          await eth.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: '0x5afe',
-                chainName: 'Sapphire Mainnet',
-                nativeCurrency: {
-                  name: 'ROSE',
-                  symbol: 'ROSE',
-                  decimals: 18,
-                },
-                rpcUrls: ['https://sapphire.oasis.io/', 'wss://sapphire.oasis.io/ws'],
-                blockExplorerUrls: ['https://explorer.stg.oasis.io/mainnet/sapphire'],
-              },
-            ],
-          });
-        } catch (e: any) {
-          throw new Error(e);
-        }
-      } else if (network === Network.SapphireLocalnet) {
-        try {
-          await eth.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: '0x5afd',
-                chainName: 'Sapphire Localnet',
-                rpcUrls: ['http://localhost:8545'],
-              },
-            ],
-          });
-        } catch (e: any) {
-          throw new Error(e);
-        }
-      }
-      throw e;
+      addNetwork(network);
     }
   }
 
@@ -211,6 +205,8 @@ export const useEthereumStore = defineStore('ethereum', () => {
     network,
     getEthereumProvider,
     connect,
+    checkIsCorrectNetwork,
+    addNetwork,
     switchNetwork,
   };
 });
