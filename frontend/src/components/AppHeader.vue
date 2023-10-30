@@ -3,7 +3,7 @@ import AccountPicker from '@/components/AccountPicker.vue';
 </script>
 
 <template>
-  <header class="sticky top-0">
+  <header class="sticky top-0 z-10">
     <nav class="bg-white border-gray-200 p-2 xl:py-4 xl:px-0">
       <div class="flex flex-wrap justify-between items-center mx-auto max-w-screen-md">
         <RouterLink to="/">

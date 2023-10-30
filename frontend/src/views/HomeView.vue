@@ -18,6 +18,7 @@ const message = ref('');
 const author = ref('');
 const newMessage = ref('');
 const isLoading = ref(true);
+const isLoadingPrivateMessage = ref(true);
 const isSettingMessage = ref(false);
 const isCorrectNetworkSelected = ref<Boolean>(true);
 
@@ -58,9 +59,24 @@ async function getMessage(): Promise<Message | null> {
   return retrievedMessage;
 }
 
-async function fetchPrivateMessage(): Promise<Record<string, string>> {
-  const [ message, author ] = await messageBox.value.readPrivateMessage();
-  return { message, author };
+async function fetchPrivateMessage(): Promise<[string, string] | null> {
+  let retrievedPrivateMessage: [string, string] | null = null;
+
+  try {
+    isLoadingPrivateMessage.value = true;
+    retrievedPrivateMessage = await messageBox.value.readPrivateMessage();
+    const [message, author] = retrievedPrivateMessage;
+
+    privateMessage.value = message;
+    privateAuthor.value = author;
+  } catch (e) {
+    errors.value.push(`Failed to get private message: ${e.message ?? JSON.stringify(e)}`);
+    console.error(e);
+  } finally {
+    isLoadingPrivateMessage.value = false;
+  }
+
+  return retrievedPrivateMessage;
 }
 
 async function setMessage(e: Event): Promise<void> {
@@ -105,7 +121,10 @@ async function setPrivateMessage(e: Event): Promise<void> {
   try {
     errors.value.splice(0, errors.value.length);
     isLoading.value = true;
-    await messageBox.value.setPrivateMessage(newPrivateMessageRecipient.value, newPrivateMessage.value);
+    await messageBox.value.setPrivateMessage(
+      newPrivateMessageRecipient.value,
+      newPrivateMessage.value,
+    );
   } catch (e: any) {
     errors.value.push(`Failed to set message: ${e.message ?? JSON.stringify(e)}`);
     console.error(e);
@@ -122,6 +141,10 @@ onMounted(async () => {
   isCorrectNetworkSelected.value = eth.checkIsCorrectNetwork();
 
   getMessage();
+  if (eth.address) {
+    const privateMessage = await fetchPrivateMessage();
+    console.log('privateMessage', privateMessage);
+  }
 });
 </script>
 
@@ -151,19 +174,6 @@ onMounted(async () => {
       Set your new message by filling the message field bellow.
     </p>
 
-    <br/>
-    <p class="text-base">Private message:</p>
-    <div v-if="!isLoading">
-      <p class="text-base">{{ privateMessage }}</p>
-    </div>
-    <div v-else><MessageLoader/></div>
-    <p class="text-base">Private message author:</p>
-    <div v-if="!isLoading">
-      <p class="text-base">{{ privateAuthor }}</p>
-    </div>
-    <div v-else><MessageLoader/></div>
-    <br/>
-
     <form @submit="setMessage">
       <div class="form-group">
         <input
@@ -190,7 +200,10 @@ onMounted(async () => {
         <span v-else>Set Message</span>
       </AppButton>
 
-      <div v-if="errors.length > 0" class="text-red-500 px-3 mt-5 rounded-xl-sm">
+      <div
+        v-if="errors.length > 0"
+        class="text-red-500 px-3 mt-5 rounded-xl-sm break-words bg-white rounded-md"
+      >
         <span class="font-bold">Errors:</span>
         <ul class="list-disc px-8">
           <li v-for="error in errors" :key="error">{{ error }}</li>
@@ -198,24 +211,70 @@ onMounted(async () => {
       </div>
     </form>
 
+    <br />
+    <br />
+
+    <h2 class="capitalize text-xl text-white font-bold mb-4">Private message</h2>
+
+    <div
+      class="message p-6 mb-6 rounded-xl border-2 border-gray-300"
+      v-if="!isLoadingPrivateMessage"
+    >
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg lg:text-lg m-0">{{ privateMessage }}</h2>
+        <div class="flex items-center flex-shrink-0">
+          <JazzIcon class="mr-2" :size="20" :address="privateAuthor" />
+          <abbr :title="privateAuthor" class="font-mono block no-underline">{{
+            abbrAddr(privateAuthor)
+          }}</abbr>
+        </div>
+      </div>
+    </div>
+    <div v-else>
+      <div class="message p-6 pt-4 mb-6 rounded-xl border-2 border-gray-300">
+        <MessageLoader />
+      </div>
+    </div>
+
+    <h2 class="capitalize text-xl text-white font-bold mb-4">Set private message</h2>
+    <p class="text-base text-white mb-10">Send your secret message to an address.</p>
+
     <form @submit="setPrivateMessage">
-      <label
+      <div class="form-group">
+        <label
           for="newPrivateMessageRecipient"
           class="peer-focus:text-primaryDark peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5"
-      >
-        New private message recipient:
-        <span class="text-red-500">*</span>
-      </label>
-      <input type="text" id="newPrivateMessageRecipient" class="peer" placeholder=" " v-model="newPrivateMessageRecipient" required />
+        >
+          New private message recipient:
+          <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          id="newPrivateMessageRecipient"
+          class="peer"
+          placeholder=" "
+          v-model="newPrivateMessageRecipient"
+          required
+        />
+      </div>
 
-      <label
+      <div class="form-group">
+        <label
           for="newPrivateMessageText"
           class="peer-focus:text-primaryDark peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5"
-      >
-        New private message:
-        <span class="text-red-500">*</span>
-      </label>
-      <input type="text" id="newPrivateMessageText" class="peer" placeholder=" " v-model="newPrivateMessage" required />
+        >
+          New private message text:
+          <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          id="newPrivateMessageText"
+          class="peer"
+          placeholder=" "
+          v-model="newPrivateMessage"
+          required
+        />
+      </div>
 
       <AppButton type="submit" variant="primary" :disabled="isSettingPrivateMessage">
         <span v-if="isSettingPrivateMessage">Setting…</span>

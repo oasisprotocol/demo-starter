@@ -19,6 +19,20 @@ describe("MessageBox", function () {
     expect(await messageBox.author()).to.equal(await ethers.provider.getSigner(0).getAddress());
   });
 
+
+  it("Should read empty private message", async function () {
+    if ((await ethers.provider.getNetwork()).chainId != 1337) { // See https://github.com/oasisprotocol/sapphire-paratime/issues/197
+      this.skip();
+    }
+    const {messageBox} = await deployMessageBox();
+
+    const messageBox2 = messageBox.connect(await ethers.getSigner(1));
+
+    const [ privateMessage, privateAuthor ] = await messageBox2.readPrivateMessage();
+    expect(privateMessage).to.equal("");
+    expect(privateAuthor).to.equal("0x0000000000000000000000000000000000000000");
+  });
+
   it("Should send and read private message", async function () {
     if ((await ethers.provider.getNetwork()).chainId != 1337) { // See https://github.com/oasisprotocol/sapphire-paratime/issues/197
       this.skip();
