@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import {JsonRpcProvider} from 'ethers';
 import type { ComputedRef } from 'vue';
 import { computed } from 'vue';
 
@@ -7,7 +7,7 @@ export type { MessageBox } from '@oasisprotocol/demo-starter-backend';
 
 import { useEthereumStore } from './stores/ethereum';
 
-const provider = new ethers.providers.JsonRpcProvider(
+const provider = new JsonRpcProvider(
   import.meta.env.VITE_WEB3_GATEWAY,
   'any',
 );

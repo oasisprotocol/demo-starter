@@ -1,6 +1,12 @@
 import detectEthereumProvider from '@metamask/detect-provider';
 import * as sapphire from '@oasisprotocol/sapphire-paratime';
-import { BigNumber, ethers } from 'ethers';
+import {
+  BrowserProvider,
+  hexlify,
+  JsonRpcProvider,
+  JsonRpcSigner,
+  type Provider
+} from 'ethers';
 import { defineStore } from 'pinia';
 import { markRaw, ref, shallowRef } from 'vue';
 import { MetaMaskNotInstalledError } from '@/utils/errors';
@@ -18,7 +24,7 @@ export enum Network {
   SapphireLocalnet = 0x5afd,
   Local = 1337,
 
-  FromConfig = BigNumber.from(import.meta.env.VITE_NETWORK).toNumber(),
+  FromConfig = Number(BigInt(import.meta.env.VITE_NETWORK)),
 }
 
 export enum ConnectionStatus {
@@ -27,9 +33,9 @@ export enum ConnectionStatus {
   Connected,
 }
 
-function networkFromChainId(chainId: number | string): Network {
+function networkFromChainId(chainId: number | bigint | string): Network {
   const id = typeof chainId === 'string' ? parseInt(chainId, 16) : chainId;
-  if (Network[id]) return id as Network;
+  if (Network[Number(id)]) return id as Network;
   return Network.Unknown;
 }
 
@@ -40,6 +46,8 @@ const networkNameMap: Record<Network, string> = {
   [Network.SapphireTestnet]: 'Sapphire Testnet',
   [Network.SapphireMainnet]: 'Sapphire Mainnet',
   [Network.SapphireLocalnet]: 'Sapphire Localnet',
+  [Network.BscMainnet]: 'BSC',
+  [Network.BscTestnet]: 'BSC Testnet',
 };
 
 export function networkName(network?: Network): string {
@@ -57,20 +65,20 @@ interface RequestArguments {
 declare global {
   interface Window {
     ethereum: Awaited<ReturnType<typeof detectEthereumProvider>> &
-      ethers.providers.Web3Provider & {
-        request(args: RequestArguments): Promise<unknown>;
-      } & { networkVersion: string };
+      BrowserProvider & {
+      request(args: RequestArguments): Promise<unknown>;
+    } & { networkVersion: string };
   }
 }
 
 export const useEthereumStore = defineStore('ethereum', () => {
-  const signer = shallowRef<ethers.providers.JsonRpcSigner | undefined>(undefined);
-  const unwrappedSigner = shallowRef<ethers.providers.JsonRpcSigner | undefined>(undefined);
-  const provider = shallowRef<ethers.providers.Provider>(
-    new ethers.providers.JsonRpcProvider(import.meta.env.VITE_WEB3_GATEWAY, 'any'),
+  const signer = shallowRef<JsonRpcSigner | undefined>(undefined);
+  const unwrappedSigner = shallowRef<JsonRpcSigner | undefined>(undefined);
+  const provider = shallowRef<Provider>(
+    new JsonRpcProvider(import.meta.env.VITE_WEB3_GATEWAY, 'any'),
   );
-  const unwrappedProvider = shallowRef<ethers.providers.JsonRpcProvider>(
-    new ethers.providers.JsonRpcProvider(import.meta.env.VITE_WEB3_GATEWAY, 'any'),
+  const unwrappedProvider = shallowRef<JsonRpcProvider>(
+    new JsonRpcProvider(import.meta.env.VITE_WEB3_GATEWAY, 'any'),
   );
   const network = ref(Network.FromConfig);
   const address = ref<string | undefined>(undefined);
@@ -79,19 +87,19 @@ export const useEthereumStore = defineStore('ethereum', () => {
   async function getEthereumProvider() {
     const ethProvider = await detectEthereumProvider();
 
-    if (!window.ethereum || ethProvider !== window.ethereum) {
+    if (!window.ethereum || ethProvider === null) {
       throw new MetaMaskNotInstalledError('MetaMask not installed!');
     }
 
-    return ethProvider;
+    return {ethProvider: window.ethereum, isMetaMask: ethProvider.isMetaMask};
   }
 
   async function connect() {
     if (signer.value) return;
 
-    const ethProvider = await getEthereumProvider();
+    const {ethProvider, isMetaMask} = await getEthereumProvider();
 
-    const s = new ethers.providers.Web3Provider(ethProvider).getSigner();
+    const s = await new BrowserProvider(ethProvider).getSigner();
     await s.provider.send('eth_requestAccounts', []);
 
     const setSigner = (addr: string | undefined, net: Network) => {
@@ -100,18 +108,18 @@ export const useEthereumStore = defineStore('ethereum', () => {
       signer.value = isSapphire ? sapphire.wrap(s) : s;
       unwrappedSigner.value = s;
       provider.value = isSapphire ? markRaw(sapphire.wrap(s.provider)) : s.provider;
-      unwrappedProvider.value = s.provider;
+      unwrappedProvider.value = s.provider as JsonRpcProvider;
       network.value = net;
       address.value = addr;
     };
 
     const [addr, net] = await Promise.all([
       s.getAddress(),
-      s.getChainId().then(networkFromChainId),
+      s.provider.getNetwork().then(net => networkFromChainId(net.chainId)),
     ]);
     setSigner(addr, net);
 
-    if (!ethProvider.isMetaMask) {
+    if (!isMetaMask) {
       status.value = ConnectionStatus.Connected;
       return;
     }
@@ -182,17 +190,18 @@ export const useEthereumStore = defineStore('ethereum', () => {
   async function switchNetwork(network: Network) {
     const eth = window.ethereum;
     if (!eth || !provider.value) return;
-    const { chainId: currentNetwork } = await provider.value.getNetwork();
-    if (network == currentNetwork) return;
+    const { chainId: currentNetwork} = await provider.value.getNetwork();
+    if (network == Number(currentNetwork)) return;
     try {
       await eth.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: ethers.utils.hexlify(network).replace('0x0', '0x') }],
+        params: [{ chainId: hexlify(network.toString(16)).replace('0x0', '0x') }],
       });
     } catch (e: any) {
       // This error code indicates that the chain has not been added to MetaMask.
       if ((e as any).code !== 4902) throw e;
       addNetwork(network);
+      throw e;
     }
   }
 

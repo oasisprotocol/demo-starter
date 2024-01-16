@@ -43,7 +43,7 @@ async function getMessage(): Promise<Message | null> {
 
     return retrievedMessage;
   } catch (e) {
-    errors.value.push(`Failed to get message: ${e.message ?? JSON.stringify(e)}`);
+    errors.value.push(`Failed to get message: ${(e as any).message ?? JSON.stringify(e)}`);
     console.error(e);
   } finally {
     isLoading.value = false;
