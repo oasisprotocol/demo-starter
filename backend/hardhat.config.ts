@@ -1,11 +1,11 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import {JsonRpcProvider} from "@ethersproject/providers";
-import "@nomiclabs/hardhat-ethers"
+import '@nomicfoundation/hardhat-ethers';
 import '@oasisprotocol/sapphire-hardhat';
 import '@typechain/hardhat';
 import canonicalize from 'canonicalize';
+import {JsonRpcProvider} from "ethers";
 import 'hardhat-watcher';
 import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names';
 import { HardhatUserConfig, task } from 'hardhat/config';
@@ -46,9 +46,9 @@ task('deploy')
     const uwProvider = new JsonRpcProvider(hre.network.config.url);
     const MessageBox = await hre.ethers.getContractFactory('MessageBox', new hre.ethers.Wallet(accounts[0], uwProvider));
     const messageBox = await MessageBox.deploy();
-    await messageBox.deployed();
+    await messageBox.waitForDeployment();
 
-    console.log(`MessageBox address: ${messageBox.address}`);
+    console.log(`MessageBox address: ${await messageBox.getAddress()}`);
     return messageBox;
 });
 
@@ -78,7 +78,7 @@ const config: HardhatUserConfig = {
       chainId: 0x5aff,
       accounts,
     },
-    'sapphire-localnet': { // docker run -it -p8545:8545 -p8546:8546 ghcr.io/oasisprotocol/sapphire-dev -test-mnemonic
+    'sapphire-localnet': { // docker run -it -p8545:8545 -p8546:8546 ghcr.io/oasisprotocol/sapphire-localnet -test-mnemonic
       url: 'http://localhost:8545',
       chainId: 0x5afd,
       accounts,
