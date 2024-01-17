@@ -26,14 +26,19 @@ interface Message {
   author: string;
 }
 
+function handleError(error: Error, errorMessage: string) {
+  errors.value.push(`${errorMessage}: ${error.message ?? JSON.stringify(error)}`);
+  console.error(error);
+}
+
 async function fetchMessage(): Promise<Message> {
-  const message = await uwMessageBox.value.message();
-  const author = await uwMessageBox.value.author();
+  const message = await uwMessageBox.value!.message();
+  const author = await uwMessageBox.value!.author();
 
   return { message, author };
 }
 
-async function getMessage(): Promise<Message | null> {
+async function fetchAndSetMessageValues(): Promise<Message | null> {
   let retrievedMessage: Message | null = null;
 
   try {
@@ -43,8 +48,7 @@ async function getMessage(): Promise<Message | null> {
 
     return retrievedMessage;
   } catch (e) {
-    errors.value.push(`Failed to get message: ${(e as any).message ?? JSON.stringify(e)}`);
-    console.error(e);
+    handleError(e as Error, 'Failed to get message');
   } finally {
     isLoading.value = false;
   }
@@ -57,14 +61,17 @@ async function setMessage(e: Event): Promise<void> {
     e.target.checkValidity();
     if (!e.target.reportValidity()) return;
   }
+
   e.preventDefault();
+
   try {
     const newMessageValue = newMessage.value;
     errors.value.splice(0, errors.value.length);
     isSettingMessage.value = true;
-    await messageBox.value.setMessage(newMessageValue);
 
-    await retry<Promise<Message | null>>(getMessage, (retrievedMessage) => {
+    await messageBox.value!.setMessage(newMessageValue);
+
+    await retry<Promise<Message | null>>(fetchAndSetMessageValues, (retrievedMessage) => {
       if (retrievedMessage?.message !== newMessageValue) {
         throw new Error('Unable to determine if the new message has been correctly set!');
       }
@@ -74,8 +81,7 @@ async function setMessage(e: Event): Promise<void> {
 
     newMessage.value = '';
   } catch (e: any) {
-    errors.value.push(`Failed to set message: ${e.message ?? JSON.stringify(e)}`);
-    console.error(e);
+    handleError(e, 'Failed to set message');
   } finally {
     isSettingMessage.value = false;
   }
@@ -85,14 +91,18 @@ async function switchNetwork() {
   await eth.switchNetwork(Network.FromConfig);
 }
 
-onMounted(async () => {
+async function connectAndSwitchNetwork() {
   await eth.connect();
-  isCorrectNetworkSelected.value = eth.checkIsCorrectNetwork();
-  await eth.switchNetwork(Network.FromConfig);
-  // Check again if the right network has been selected
-  isCorrectNetworkSelected.value = eth.checkIsCorrectNetwork();
+  isCorrectNetworkSelected.value = await eth.checkIsCorrectNetwork();
+  if (!isCorrectNetworkSelected.value) {
+    await switchNetwork();
+  }
+  isCorrectNetworkSelected.value = await eth.checkIsCorrectNetwork();
+}
 
-  getMessage();
+onMounted(async () => {
+  connectAndSwitchNetwork();
+  fetchAndSetMessageValues();
 });
 </script>
 
