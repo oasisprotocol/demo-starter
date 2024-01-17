@@ -37,26 +37,21 @@
     }
   },
   "dependencies": {
-    "@ethersproject/abi": "^5.7.0",
     "@openzeppelin/contracts": "^4.8.1",
-    "ethers": "^5.7.2"
+    "ethers": "^6.10.0"
   },
   "devDependencies": {
-    "@ethersproject/abstract-provider": "^5.7.0",
-    "@ethersproject/abstract-signer": "^5.7.0",
-    "@ethersproject/bytes": "^5.7.0",
-    "@ethersproject/providers": "^5.7.2",
-    "@nomiclabs/hardhat-ethers": "^2.2.2",
-    "@oasisprotocol/sapphire-contracts": "^0.2.3",
+    "@nomicfoundation/hardhat-ethers": "^3.0.5",
+    "@oasisprotocol/sapphire-contracts": "^0.2.6",
     "@oasisprotocol/sapphire-hardhat": "^2.16.1",
-    "@typechain/ethers-v5": "^10.2.0",
-    "@typechain/hardhat": "^6.1.5",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
     "@types/chai": "^4.3.4",
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.14.0",
     "canonicalize": "^1.0.8",
     "chai": "^4.3.7",
-    "hardhat": "^2.16.1",
+    "hardhat": "^2.19.2",
     "hardhat-watcher": "^2.5.0",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.8.4",
@@ -64,7 +59,7 @@
     "solhint": "^3.4.0",
     "solidity-coverage": "^0.8.2",
     "ts-node": "^10.9.1",
-    "typechain": "^8.1.1",
+    "typechain": "^8.3.2",
     "typescript": "^4.9.5"
   }
 }
