@@ -101,8 +101,8 @@ async function connectAndSwitchNetwork() {
 }
 
 onMounted(async () => {
-  connectAndSwitchNetwork();
-  fetchAndSetMessageValues();
+  await connectAndSwitchNetwork();
+  await fetchAndSetMessageValues();
 });
 </script>
 
