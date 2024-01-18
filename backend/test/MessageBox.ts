@@ -5,7 +5,7 @@ describe("MessageBox", function () {
   async function deployMessageBox() {
     const MessageBox_factory = await ethers.getContractFactory("MessageBox");
     const messageBox = await MessageBox_factory.deploy();
-    await messageBox.deployed();
+    await messageBox.waitForDeployment();
     return { messageBox };
   }
 
@@ -15,6 +15,6 @@ describe("MessageBox", function () {
     await messageBox.setMessage("hello world");
 
     expect(await messageBox.message()).to.equal("hello world");
-    expect(await messageBox.author()).to.equal(await ethers.provider.getSigner(0).getAddress());
+    expect(await messageBox.author()).to.equal(await (await ethers.provider.getSigner(0)).getAddress());
   });
 });
