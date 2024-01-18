@@ -64,6 +64,9 @@ async function setMessage(e: Event): Promise<void> {
 
   e.preventDefault();
 
+  const retrieveMessage = await messageBox.value!.retrieveMessage();
+  console.log('retrieveMessage', retrieveMessage);
+
   try {
     const newMessageValue = newMessage.value;
     errors.value.splice(0, errors.value.length);
