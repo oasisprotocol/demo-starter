@@ -1,17 +1,16 @@
 import detectEthereumProvider from '@metamask/detect-provider';
 import * as sapphire from '@oasisprotocol/sapphire-paratime';
 import {
-  AbstractSigner,
   BrowserProvider,
   type Eip1193Provider,
   JsonRpcProvider,
+  JsonRpcSigner,
   type Provider,
+  type Signer,
   toBeHex,
-  VoidSigner,
-  ZeroAddress,
 } from 'ethers';
 import { defineStore } from 'pinia';
-import { markRaw, ref, shallowRef } from 'vue';
+import { markRaw, type Raw, ref, shallowRef } from 'vue';
 import { MetaMaskNotInstalledError } from '@/utils/errors';
 
 export enum Network {
@@ -72,16 +71,14 @@ export const useEthereumStore = defineStore('ethereum', () => {
       staticNetwork: true,
     }),
   );
-  const unwrappedProvider = shallowRef<JsonRpcProvider | BrowserProvider>(
+  const unwrappedProvider = shallowRef<Provider>(
     new JsonRpcProvider(import.meta.env.VITE_WEB3_GATEWAY, undefined, {
       staticNetwork: true,
     }),
   );
 
-  const signer = shallowRef<AbstractSigner>(new VoidSigner(ZeroAddress, provider.value));
-  const unwrappedSigner = shallowRef<AbstractSigner>(
-    new VoidSigner(ZeroAddress, unwrappedProvider.value),
-  );
+  const signer = shallowRef<Signer | BrowserProvider | Raw<object>>();
+  const unwrappedSigner = shallowRef<Signer>();
 
   const network = ref(Network.FromConfig);
   const address = ref<string | undefined>(undefined);
@@ -94,31 +91,31 @@ export const useEthereumStore = defineStore('ethereum', () => {
       throw new MetaMaskNotInstalledError('MetaMask not installed!');
     }
 
-    return window.ethereum;
+    return ethProvider;
   }
 
-  async function init(addr: string) {
-    const eth = window.ethereum!;
+  async function init(addr: string, eth: Eip1193Provider) {
+    const browserProvider = new BrowserProvider(eth);
 
-    const browserProvider = await new BrowserProvider(eth);
     const providerNetwork = await browserProvider.getNetwork();
     const chainId = networkByChainId(providerNetwork.chainId);
 
     const isSapphire = sapphire.NETWORKS[chainId];
 
-    let sapphireProvider = null;
+    let sapphireSigner: ReturnType<typeof sapphire.wrap>;
 
     if (isSapphire) {
-      sapphireProvider = sapphire.wrap(browserProvider);
+      const signer = await browserProvider.getSigner();
+      sapphireSigner = sapphire.wrap<JsonRpcSigner>(signer);
     }
 
-    signer.value = isSapphire
-      ? await sapphireProvider!.getSigner(addr)
-      : await browserProvider.getSigner(addr);
+    signer.value = isSapphire ? markRaw(sapphireSigner!) : await browserProvider.getSigner();
 
     unwrappedSigner.value = await browserProvider.getSigner(addr);
-    provider.value = isSapphire ? markRaw(sapphireProvider!) : browserProvider;
-    unwrappedProvider.value = browserProvider;
+    provider.value = isSapphire
+      ? markRaw(sapphire.wrap(browserProvider.provider))
+      : browserProvider.provider;
+    unwrappedProvider.value = browserProvider.provider;
     network.value = chainId;
     address.value = addr;
   }
@@ -126,18 +123,18 @@ export const useEthereumStore = defineStore('ethereum', () => {
   const connect = async () => {
     const eth = await getEthereumProvider();
 
-    const accounts: string[] = await (eth.request?.({
+    const accounts: string[] = (await (eth.request?.({
       method: 'eth_accounts',
-    }) || Promise.resolve([]));
+    }) || Promise.resolve([]))) as string[];
 
     if (!accounts || accounts?.length <= 0) {
       throw new Error('[useEthereumStore] Request account failed!');
     }
 
-    await init(accounts[0]);
+    await init(accounts[0], eth as unknown as Eip1193Provider);
 
-    eth.on('accountsChanged', (accountsChanged) => {
-      init(accountsChanged[0]);
+    eth.on('accountsChanged', (accountsChanged: string[]) => {
+      init(accountsChanged[0], eth as unknown as Eip1193Provider);
     });
     eth.on('chainChanged', () => {
       window.location.reload();
@@ -200,10 +197,11 @@ export const useEthereumStore = defineStore('ethereum', () => {
   async function switchNetwork(network: Network) {
     const eth = window.ethereum!;
     if (!eth || !provider.value) return;
-    const { chainId: currentNetwork } = await provider.value.getNetwork();
+    const { chainId: currentNetwork } = await provider.value!.getNetwork();
     if (network == Number(currentNetwork)) return;
     try {
       const chainId = toBeHex(network).replace('0x0', '0x');
+
       await eth.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId }],
