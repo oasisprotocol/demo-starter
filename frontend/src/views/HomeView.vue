@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 
-import { useMessageBox, useUnwrappedMessageBox } from '../contracts';
 import { Network, useEthereumStore } from '../stores/ethereum';
 import { abbrAddr } from '@/utils/utils';
 import AppButton from '@/components/AppButton.vue';
@@ -10,8 +9,6 @@ import JazzIcon from '@/components/JazzIcon.vue';
 import { retry } from '@/utils/promise';
 
 const eth = useEthereumStore();
-const messageBox = useMessageBox();
-const uwMessageBox = useUnwrappedMessageBox();
 
 const errors = ref<string[]>([]);
 const message = ref('');
@@ -32,8 +29,8 @@ function handleError(error: Error, errorMessage: string) {
 }
 
 async function fetchMessage(): Promise<Message> {
-  const message = await uwMessageBox.value!.message();
-  const author = await uwMessageBox.value!.author();
+  const message = await eth.unwrappedMessageBox!.message();
+  const author = await eth.unwrappedMessageBox!.author();
 
   return { message, author };
 }
@@ -69,7 +66,7 @@ async function setMessage(e: Event): Promise<void> {
     errors.value.splice(0, errors.value.length);
     isSettingMessage.value = true;
 
-    await messageBox.value!.setMessage(newMessageValue);
+    await eth.messageBox!.setMessage(newMessageValue);
 
     await retry<Promise<Message | null>>(fetchAndSetMessageValues, (retrievedMessage) => {
       if (retrievedMessage?.message !== newMessageValue) {

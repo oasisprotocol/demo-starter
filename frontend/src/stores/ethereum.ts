@@ -13,6 +13,8 @@ import {
 import { defineStore } from 'pinia';
 import { markRaw, ref, shallowRef } from 'vue';
 import { MetaMaskNotInstalledError } from '@/utils/errors';
+import { type MessageBox, MessageBox__factory } from '@oasisprotocol/demo-starter-backend';
+export type { MessageBox } from '@oasisprotocol/demo-starter-backend';
 
 export enum Network {
   Unknown = 0,
@@ -66,6 +68,8 @@ declare global {
   }
 }
 
+const MESSAGE_BOX_ADDR = import.meta.env.VITE_MESSAGE_BOX_ADDR!;
+
 export const useEthereumStore = defineStore('ethereum', () => {
   const provider = shallowRef<Provider>(
     new JsonRpcProvider(import.meta.env.VITE_WEB3_GATEWAY, undefined, {
@@ -86,6 +90,9 @@ export const useEthereumStore = defineStore('ethereum', () => {
   const network = ref(Network.FromConfig);
   const address = ref<string | undefined>(undefined);
   const status = ref(ConnectionStatus.Unknown);
+
+  const messageBox = ref<MessageBox | null>(null);
+  const unwrappedMessageBox = ref<MessageBox | null>(null);
 
   async function getEthereumProvider() {
     const ethProvider = await detectEthereumProvider();
@@ -121,6 +128,12 @@ export const useEthereumStore = defineStore('ethereum', () => {
     unwrappedProvider.value = browserProvider;
     network.value = chainId;
     address.value = addr;
+
+    messageBox.value = MessageBox__factory.connect(MESSAGE_BOX_ADDR, signer.value);
+    unwrappedMessageBox.value = MessageBox__factory.connect(
+      MESSAGE_BOX_ADDR,
+      unwrappedSigner.value,
+    );
   }
 
   const connect = async () => {
@@ -226,6 +239,8 @@ export const useEthereumStore = defineStore('ethereum', () => {
     provider,
     address,
     network,
+    messageBox,
+    unwrappedMessageBox,
     getEthereumProvider,
     connect,
     checkIsCorrectNetwork,
