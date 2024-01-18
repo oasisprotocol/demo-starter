@@ -3,8 +3,8 @@ import * as sapphire from '@oasisprotocol/sapphire-paratime';
 import {
   AbstractSigner,
   BrowserProvider,
-  type Eip1193Provider,
-  JsonRpcProvider,
+  type Eip1193Provider, ethers,
+  JsonRpcProvider, JsonRpcSigner,
   type Provider,
   toBeHex,
   VoidSigner,
@@ -82,7 +82,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
     }),
   );
 
-  const signer = shallowRef<AbstractSigner>(new VoidSigner(ZeroAddress, provider.value));
+  const signer = shallowRef<AbstractSigner | any>(new VoidSigner(ZeroAddress, provider.value));
   const unwrappedSigner = shallowRef<AbstractSigner>(
     new VoidSigner(ZeroAddress, unwrappedProvider.value),
   );
@@ -107,7 +107,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
   async function init(addr: string) {
     const eth = window.ethereum!;
 
-    const browserProvider = await new BrowserProvider(eth);
+    const browserProvider = await new ethers.JsonRpcProvider(import.meta.env.VITE_WEB3_GATEWAY);
     const providerNetwork = await browserProvider.getNetwork();
     const chainId = networkByChainId(providerNetwork.chainId);
 
@@ -119,11 +119,12 @@ export const useEthereumStore = defineStore('ethereum', () => {
       sapphireProvider = sapphire.wrap(browserProvider);
     }
 
-    signer.value = isSapphire
-      ? await sapphireProvider!.getSigner(addr)
-      : await browserProvider.getSigner(addr);
+    unwrappedSigner.value = new JsonRpcSigner(browserProvider, addr);
 
-    unwrappedSigner.value = await browserProvider.getSigner(addr);
+    signer.value = isSapphire
+      ? new JsonRpcSigner(sapphireProvider!, addr)
+      : unwrappedSigner.value;
+
     provider.value = isSapphire ? markRaw(sapphireProvider!) : browserProvider;
     unwrappedProvider.value = browserProvider;
     network.value = chainId;

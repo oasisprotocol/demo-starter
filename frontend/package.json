@@ -21,7 +21,7 @@
     "@metamask/jazzicon": "^2.0.0",
     "@oasisprotocol/demo-starter-backend": "workspace:^",
     "@oasisprotocol/sapphire-paratime": "^1.2.2",
-    "ethers": "^6.10.0",
+    "ethers": "6.7.1",
     "pinia": "^2.0.28",
     "vue": "^3.2.45",
     "vue-content-loader": "^2.0.1",
