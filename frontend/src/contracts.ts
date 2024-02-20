@@ -5,7 +5,7 @@ import { type MessageBox, MessageBox__factory } from '@oasisprotocol/demo-starte
 export type { MessageBox } from '@oasisprotocol/demo-starter-backend';
 
 import { useEthereumStore } from './stores/ethereum';
-import { VoidSigner } from 'ethers';
+import { type ContractRunner, VoidSigner } from 'ethers';
 
 const addr = import.meta.env.VITE_MESSAGE_BOX_ADDR!;
 
@@ -23,7 +23,7 @@ export function useMessageBox(): ComputedRef<MessageBox | null> {
       return null;
     }
 
-    return MessageBox__factory.connect(addr, eth.signer);
+    return MessageBox__factory.connect(addr, eth.signer as ContractRunner);
   });
 }
 
