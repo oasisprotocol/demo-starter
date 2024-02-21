@@ -42,8 +42,8 @@
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.5",
-    "@oasisprotocol/sapphire-contracts": "^0.2.6",
-    "@oasisprotocol/sapphire-hardhat": "^2.16.1",
+    "@oasisprotocol/sapphire-contracts": "^0.2.7",
+    "@oasisprotocol/sapphire-hardhat": "^2.19.4",
     "@typechain/ethers-v6": "^0.5.1",
     "@typechain/hardhat": "^9.1.0",
     "@types/chai": "^4.3.4",
