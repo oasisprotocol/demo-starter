@@ -9,7 +9,7 @@ describe("MessageBox", function () {
     return { messageBox };
   }
 
-  it("Should send message", async function () {
+  it("Should set message", async function () {
     const {messageBox} = await deployMessageBox();
 
     await messageBox.setMessage("hello world");

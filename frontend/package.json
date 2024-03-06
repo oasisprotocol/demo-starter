@@ -20,7 +20,7 @@
     "@metamask/detect-provider": "^2.0.0",
     "@metamask/jazzicon": "^2.0.0",
     "@oasisprotocol/demo-starter-backend": "workspace:^",
-    "@oasisprotocol/sapphire-paratime": "^1.2.2",
+    "@oasisprotocol/sapphire-paratime": "^1.3.2",
     "ethers": "^6.10.0",
     "pinia": "^2.0.28",
     "vue": "^3.2.45",

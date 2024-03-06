@@ -61,7 +61,7 @@ export function networkName(network?: Network): string {
 
 declare global {
   interface Window {
-    ethereum?: BrowserProvider & Eip1193Provider & sapphire.SapphireAnnex;
+    ethereum: BrowserProvider & Eip1193Provider & sapphire.SapphireAnnex;
   }
 }
 
@@ -91,7 +91,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
       throw new MetaMaskNotInstalledError('MetaMask not installed!');
     }
 
-    return ethProvider;
+    return ethProvider as unknown as typeof window.ethereum;
   }
 
   async function init(addr: string, eth: Eip1193Provider) {

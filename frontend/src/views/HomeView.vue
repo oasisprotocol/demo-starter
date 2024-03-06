@@ -32,8 +32,8 @@ function handleError(error: Error, errorMessage: string) {
 }
 
 async function fetchMessage(): Promise<Message> {
-  const message = await uwMessageBox.value!.message();
-  const author = await uwMessageBox.value!.author();
+  const message = await messageBox.value!.message();
+  const author = await messageBox.value!.author();
 
   return { message, author };
 }
