@@ -5,11 +5,12 @@ import '@nomicfoundation/hardhat-ethers';
 import '@oasisprotocol/sapphire-hardhat';
 import '@typechain/hardhat';
 import canonicalize from 'canonicalize';
-import {JsonRpcProvider} from "ethers";
+import { JsonRpcProvider } from 'ethers';
 import 'hardhat-watcher';
 import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names';
 import { HardhatUserConfig, task } from 'hardhat/config';
 import 'solidity-coverage';
+// import 'dotenv';
 
 const TASK_EXPORT_ABIS = 'export-abis';
 
@@ -38,18 +39,20 @@ task(TASK_EXPORT_ABIS, async (_args, hre) => {
 });
 
 // Unencrypted contract deployment.
-task('deploy')
-  .setAction(async (args, hre) => {
-    await hre.run('compile');
+task('deploy').setAction(async (args, hre) => {
+  await hre.run('compile');
 
-    // For deployment unwrap the provider to enable contract verification.
-    const uwProvider = new JsonRpcProvider(hre.network.config.url);
-    const MessageBox = await hre.ethers.getContractFactory('MessageBox', new hre.ethers.Wallet(accounts[0], uwProvider));
-    const messageBox = await MessageBox.deploy();
-    await messageBox.waitForDeployment();
+  // For deployment unwrap the provider to enable contract verification.
+  const uwProvider = new JsonRpcProvider(hre.network.config.url);
+  const MessageBox = await hre.ethers.getContractFactory(
+    'MessageBox',
+    new hre.ethers.Wallet(accounts[0], uwProvider),
+  );
+  const messageBox = await MessageBox.deploy();
+  await messageBox.waitForDeployment();
 
-    console.log(`MessageBox address: ${await messageBox.getAddress()}`);
-    return messageBox;
+  console.log(`MessageBox address: ${await messageBox.getAddress()}`);
+  return messageBox;
 });
 
 // Read message from the MessageBox.
@@ -79,21 +82,22 @@ task('setMessage')
 
 // Hardhat Node and sapphire-dev test mnemonic.
 const TEST_HDWALLET = {
-  mnemonic: "test test test test test test test test test test test junk",
+  mnemonic: 'test test test test test test test test test test test junk',
   path: "m/44'/60'/0'/0",
   initialIndex: 0,
   count: 20,
-  passphrase: "",
+  passphrase: '',
 };
 
 const accounts = process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : TEST_HDWALLET;
 
 const config: HardhatUserConfig = {
   networks: {
-    hardhat: { // https://hardhat.org/metamask-issue.html
+    hardhat: {
+      // https://hardhat.org/metamask-issue.html
       chainId: 1337,
     },
-    'sapphire': {
+    sapphire: {
       url: 'https://sapphire.oasis.io',
       chainId: 0x5afe,
       accounts,
@@ -103,7 +107,8 @@ const config: HardhatUserConfig = {
       chainId: 0x5aff,
       accounts,
     },
-    'sapphire-localnet': { // docker run -it -p8545:8545 -p8546:8546 ghcr.io/oasisprotocol/sapphire-localnet -test-mnemonic
+    'sapphire-localnet': {
+      // docker run -it -p8545:8545 -p8546:8546 ghcr.io/oasisprotocol/sapphire-localnet -test-mnemonic
       url: 'http://localhost:8545',
       chainId: 0x5afd,
       accounts,
