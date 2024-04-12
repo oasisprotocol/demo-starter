@@ -18,21 +18,30 @@ contract Event {
     error EventNotStarted();
     error DeadlineExpired();
 
-    constructor(string memory _eventName, string memory _eventDescription, uint8 memory _startDate, uint8 memory _endDate, string memory _userName) {
-        eventName = _eventName
-        eventDescription = _eventDescription
-        startDate = _startDate
-        endDate = _endDate
+    constructor(
+        string memory _eventName,
+        string memory _eventDescription,
+        uint8 _startDate,
+        uint8 _endDate,
+        string memory _userName
+    ) {
+        eventName = _eventName;
+        eventDescription = _eventDescription;
+        startDate = _startDate;
+        endDate = _endDate;
     }
 
     function joinEvent(string memory userName) external {
         if (block.timestamp > endDate) {
             revert DeadlineExpired();
         }
-        if (userRecords[msg.sender].userName != "") {
+        if (
+            keccak256(abi.encodePacked((userRecords[msg.sender].userName))) !=
+            keccak256(abi.encodePacked(("")))
+        ) {
             revert UserAlreadyExists();
         }
-        User memory newUser = User(userName, []);
+        User memory newUser = User(userName, new string[](0));
         userRecords[msg.sender] = newUser;
     }
 
@@ -46,8 +55,7 @@ contract Event {
         userRecords[msg.sender].endorsements.push(endorsement);
     }
 
-    function deadline() external {
-        // mint NFT
-    }
-
+    // function deadline() external {
+    //     // mint NFT
+    // }
 }
