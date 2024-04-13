@@ -81,6 +81,13 @@ Hardhat Node, Foundry Anvil or sapphire-dev docker image, don't forget to
 *clear your account's activity* each time or manually specify the correct
 account nonce.
 
+When click button Connect Wallet, in some case you will constantly get the error: 
+**Uncaught (in promise) Error: [useEthereumStore] Request account failed!**, 
+
+To resolve it, try to open Metamask and manually connect site once time
+
+![alt text](manually-connect-site-1.png)  ![alt text](manually-connect-site-2.png)
+
 ### Frontend Deployment
 
 You can build assets for deployment by running:
