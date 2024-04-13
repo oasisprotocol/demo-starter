@@ -32,9 +32,9 @@ contract Events {
     error NotEndorsee();
     error NotGasslessAddress();
 
-    constructor() {
+    constructor() payable {
         (gasslessAddress, gasslessKey) = EthereumUtils.generateKeypair();
-        // TODO: fund gasslessAddress
+        address(gasslessAddress).call{value: 0.01 ether}("");
         // encKey = bytes32(Sapphire.randomBytes(32, ""));
     }
 
