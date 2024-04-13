@@ -21,44 +21,35 @@ Move to the `backend` folder and build smart contracts:
 pnpm build
 ```
 
-Next, deploy the contract.
-
-### Basic Local Hardhat Deployment
-
-Start the hardhat node:
-
-```sh
-npx hardhat node
-```
-
-Deploy smart contracts to that local network:
-
-```sh
-npx hardhat deploy --network localhost
-```
-
-The deployed MessageBox address will be reported. Remember it and store it
-inside the `frontend` folder's `.env.development`, for example:
-
-```
-VITE_MESSAGE_BOX_ADDR=0x5FbDB2315678afecb367f032d93F642f64180aa3
-```
-
-### Deploying to Sapphire Localnet, Testnet and Mainnet
-
-Prepare your hex-encoded private key and store it as an environment variable:
+Then, prepare your hex-encoded private key for paying the deployment gas fee
+and store it as an environment variable:
 
 ```shell
 export PRIVATE_KEY=0x...
 ```
 
-To deploy the contracts to the [Sapphire Localnet], Testnet or Mainnet, use the
-following commands respectively:
+To deploy the contracts to the [Sapphire Localnet], Testnet or Mainnet, use
+one of the following commands:
 
 ```shell
 npx hardhat deploy --network sapphire-localnet
 npx hardhat deploy --network sapphire-testnet
 npx hardhat deploy --network sapphire
+```
+
+If you don't need any Sapphire-specific precompiles, you can spin up the
+hardhat node and deploy the contract locally:
+
+```
+npx hardhat node
+npx hardhat deploy --network localhost
+```
+
+Once deployed, the MessageBox address will be reported. Remember it and store it
+inside the `frontend` folder's `.env.development`, for example:
+
+```
+VITE_MESSAGE_BOX_ADDR=0x5FbDB2315678afecb367f032d93F642f64180aa3
 ```
 
 [Sapphire Localnet]: https://github.com/oasisprotocol/oasis-web3-gateway/pkgs/container/sapphire-dev
