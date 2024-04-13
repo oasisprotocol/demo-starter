@@ -1,21 +1,18 @@
 import { ethers } from 'hardhat';
 
-async function deployEventInstance() {
-  const myEventSeeder__factory = await ethers.getContractFactory('Event');
-  const myEventContract = await myEventSeeder__factory.deploy(
-    'Quarterly Review Q1 2024',
-    'This is the first quarterly review of 2024',
-    2024,
-    2025,
-    'deca12x',
-  );
-  await myEventContract.deployed();
-  const myEventAddress = myEventContract.address;
-  // const blockNumber = await wallet.getBlockNumber();
-  console.log(`Event contract deployed at ${myEventAddress}`);
+async function main() {
+  console.log('1');
+  const myEventsSeeder__factory = await ethers.getContractFactory('Events');
+  console.log('2');
+  const myEventsContract = await myEventsSeeder__factory.deploy();
+  console.log('3');
+  await myEventsContract.waitForDeployment();
+  console.log('4');
+  const myEventsAddress = await myEventsContract.getAddress();
+  console.log(`Events contract deployed at ${myEventsAddress}`);
 }
 
-deployEventInstance()
+main()
   .then(() => process.exit(0))
   .catch((error) => {
     console.error(error);

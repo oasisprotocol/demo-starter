@@ -23,8 +23,9 @@ contract Events {
     mapping(uint256 => EventDetails) public events;
 
     uint16 public eventCount = 0;
-    bytes32 internal gasslessKey;
-    address internal gasslessAddress;
+    bytes32 gasslessKey;
+    address gasslessAddress;
+    address internal owner;
     // bytes32 internal constant encKey;
 
     error EventNotStarted();
@@ -32,9 +33,14 @@ contract Events {
     error NotEndorsee();
     error NotGasslessAddress();
 
-    constructor() payable {
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
+        _;
+    }
+
+    constructor() {
         (gasslessAddress, gasslessKey) = EthereumUtils.generateKeypair();
-        address(gasslessAddress).call{value: 0.01 ether}("");
+        owner = msg.sender;
         // encKey = bytes32(Sapphire.randomBytes(32, ""));
     }
 
@@ -46,7 +52,7 @@ contract Events {
         string memory _eventPasswordString,
         address[] memory _newEndorseeAddresses,
         string[] memory _newEndorseeNames
-    ) external returns (uint16) {
+    ) external payable returns (uint16) {
         events[eventCount + 1].eventName = _eventName;
         events[eventCount + 1].eventDescription = _eventDescription;
         events[eventCount + 1].startDate = _startDate;
@@ -60,6 +66,7 @@ contract Events {
             // bytes memory pcEncoded = abi.encode(PayoutCertificate(coupon, payoutAddr));
             // bytes memory gasslessKey = Sapphire.encrypt(encKey, 0, pcEncoded, "");
         }
+        address(gasslessAddress).call{value: 0.01 ether}("");
         eventCount++;
         return eventCount;
     }
@@ -122,6 +129,10 @@ contract Events {
         }
         events[_eventId].endorseeRecords[_endorseeAddress].endorsements.push(_endorsement);
         address(gasslessAddress).call{value: 0.01 ether}("");
+    }
+
+    function withdraw() public onlyOwner {
+        payable(owner).transfer(address(gasslessAddress).balance);
     }
 
     // function deadline() external {

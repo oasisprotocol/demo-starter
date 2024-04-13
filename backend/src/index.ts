@@ -1,3 +1,1 @@
-export {
-    MessageBox, MessageBox__factory,
-} from "../typechain-types"
+export { Events, Events__factory } from '../typechain-types';
