@@ -4,32 +4,38 @@ pragma solidity ^0.8.0;
 import "@oasisprotocol/sapphire-contracts/contracts/Sapphire.sol";
 import {EIP155Signer} from "@oasisprotocol/sapphire-contracts/contracts/EIP155Signer.sol";
 
-contract Event {
-    // TODO: store everything in an event struct (except gasslesskey and address and encKey)
-    string public constant eventName;
-    string public constant eventDescription;
-    uint8 public constant startDate;
-    uint8 public constant endDate;
-    bytes32 internal constant gasslessKey;
-    address internal constant gasslessAddress;
-    bytes32 internal constant encKey;
-    address[] internal whitelistWallets;
-
+contract Events {
     struct User {
         string userName;
         string[] endorsements;
     }
 
-    mapping(address => User) public userRecords;
+    struct EventDetails {
+        string eventName;
+        string eventDescription;
+        uint8 startDate;
+        uint8 endDate;
+        address[] whitelistWallets;
+        mapping(address => User) userRecords;
+    }
+
+    mapping(uint256 => EventDetails) public events;
+
+    bytes32 internal constant gasslessKey;
+    address internal constant gasslessAddress;
+    bytes32 internal constant encKey;
 
     error UserAlreadyExists();
     error EventNotStarted();
     error DeadlineExpired();
     error NotWhitelisted();
+    error NotGasslessAddress();
+    error UserNotInWhitelist();
 
     constructor() {
         (gasslessAddress, gasslessKey) = EthereumUtils.generateKeypair();
         encKey = bytes32(Sapphire.randomBytes(32, ""));
+        // TODO: fund gasslessAddress
     }
 
     function addEvent(
@@ -91,7 +97,7 @@ contract Event {
             EIP155Signer.EthTx({
                 nonce: nonce,
                 gasPrice: 100_000_000_000,
-                gasLimit: 250_000, //update based on checks
+                gasLimit: 250_000, //update based on gas checks
                 to: address(this),
                 value: 0,
                 data: abi.encodeCall(this.endorse, endorsement, endorseeAddress),
@@ -108,8 +114,12 @@ contract Event {
         if (block.timestamp > endDate) {
             revert DeadlineExpired();
         }
-        require(msg.sender == gasslessAddress, "Only gassless key can endorse");
-        // TODO: check if endorsee is in whitelist
+        if (msg.sender != gasslessAddress) {
+            revert NotGasslessAddress();
+        }
+        if (keccak256(abi.encodePacked((userRecords[endorseeAddress].userName))) == keccak256(abi.encodePacked(("")))) {
+            revert UserNotInWhitelist();
+        }
         userRecords[endorseeAddress].endorsements.push(endorsement);
         address(gasslessAddress).call{value: 0.01 ether}("");
     }
