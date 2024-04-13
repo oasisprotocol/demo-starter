@@ -5,8 +5,8 @@ import "@oasisprotocol/sapphire-contracts/contracts/Sapphire.sol";
 import {EIP155Signer} from "@oasisprotocol/sapphire-contracts/contracts/EIP155Signer.sol";
 
 contract Events {
-    struct Endorsee {
-        string endorseeName;
+    struct User {
+        string userName;
         string[] endorsements;
     }
 
@@ -15,8 +15,8 @@ contract Events {
         string eventDescription;
         uint8 startDate;
         uint8 endDate;
-        bytes32 passwordHash;
-        mapping(address => Endorsee) endorseeRecords;
+        address[] whitelistWallets;
+        mapping(address => User) userRecords;
     }
 
     mapping(uint256 => EventDetails) public events;
@@ -25,12 +25,12 @@ contract Events {
     address internal constant gasslessAddress;
     bytes32 internal constant encKey;
 
-    error UserAlreadyExists(); // needed?
+    error UserAlreadyExists();
     error EventNotStarted();
     error DeadlineExpired();
-    error NotEndorsee();
+    error NotWhitelisted();
     error NotGasslessAddress();
-    error UserNotInWhitelist(); // needed?
+    error UserNotInWhitelist();
 
     constructor() {
         (gasslessAddress, gasslessKey) = EthereumUtils.generateKeypair();
@@ -38,38 +38,48 @@ contract Events {
         // TODO: fund gasslessAddress
     }
 
-    function newEvent(
+    function addEvent(
         string memory _eventName,
         string memory _eventDescription,
         uint8 _startDate,
         uint8 _endDate,
-        string memory _eventPasswordString
-        address[] memory _endorseeAddresses
-        string[] memory _endorseeNames
-    ) external {
+        string memory _userName
+        address[] memory _whitelistWallets
+    ) {
         eventName = _eventName;
         eventDescription = _eventDescription;
         startDate = _startDate;
         endDate = _endDate;
-        passwordHash = keccak256(abi.encodePacked(_eventPasswordString));
-        for (uint i = 0; i < _endorseeAddresses.length; i++) {
-            Endorsee memory newEndorsee = Endorsee(_endorseeNames[i], new string[](0));
-            endorseeRecords[_endorseeAddresses[i]] = newEndorsee;
-            // TODO: encrypt & decrypt addresses & usernames with sapphire library
-            // bytes memory pcEncoded = abi.encode(PayoutCertificate(coupon, payoutAddr));
-            // bytes memory gasslessKey = Sapphire.encrypt(encKey, 0, pcEncoded, "");
+        User memory newUser = User(_userName, new string[](0));
+        userRecords[msg.sender] = newUser;
+        whitelistWallets = _whitelistWallets;
+    }
+
+    // change function to match new state structure (event struct)
+    function joinEvent(string memory userName, uint256 eventId) external {
+        if (block.timestamp > endDate) {
+            revert DeadlineExpired();
         }
+        if (whitelistWallets[msg.sender] == false) {
+            revert NotWhitelisted();
+        }
+        if (
+            keccak256(abi.encodePacked((userRecords[msg.sender].userName))) !=
+            keccak256(abi.encodePacked(("")))
+        ) {
+            revert UserAlreadyExists();
+        }
+        User memory newUser = User(userName, new string[](0));
+        userRecords[msg.sender] = newUser;
     }
 
     function genGaslessEndorseTx(
-        string memory _endorsement,
-        address memory _endorseeAddress,
-        uint256 _nonce
-        uint256 _eventId
+        string memory endorsement,
+        address memory endorseeAddress,
+        uint256 nonce
     ) external view {
-        if (keccak256(abi.encodePacked((events[_eventId].endorseeRecords[_endorseeAddress].endorseeName))) ==
-            keccak256(abi.encodePacked(("")))) {
-            revert NotEndorsee();
+        if (whitelistWallets[msg.sender] == false) {
+            revert NotWhitelisted();
         }
         if (block.timestamp < startDate) {
             revert EventNotStarted();
@@ -77,23 +87,27 @@ contract Events {
         if (block.timestamp > endDate) {
             revert DeadlineExpired();
         }
+
+        // bytes memory pcEncoded = abi.encode(PayoutCertificate(coupon, payoutAddr));
+        // bytes memory gasslessKey = Sapphire.encrypt(encKey, 0, pcEncoded, "");
+
         bytes memory gaslessTx = EIP155Signer.sign(
             gasslessAddress,
             gasslessKey,
             EIP155Signer.EthTx({
-                nonce: _nonce,
+                nonce: nonce,
                 gasPrice: 100_000_000_000,
                 gasLimit: 250_000, //update based on gas checks
                 to: address(this),
                 value: 0,
-                data: abi.encodeCall(this.endorse, _endorsement, _endorseeAddress),
+                data: abi.encodeCall(this.endorse, endorsement, endorseeAddress),
                 chainId: block.chainid
             })
         );
         return gaslessTx;
     }
 
-    function endorse(string memory _endorsement, address memory _endorseeAddress) private {
+    function endorse(string memory endorsement, address memory endorseeAddress) external {
         if (block.timestamp < startDate) {
             revert EventNotStarted();
         }
@@ -103,11 +117,10 @@ contract Events {
         if (msg.sender != gasslessAddress) {
             revert NotGasslessAddress();
         }
-        if (keccak256(abi.encodePacked((events[_eventId].endorseeRecords[_endorseeAddress].endorseeName))) ==
-            keccak256(abi.encodePacked(("")))) {
-            revert NotEndorsee();
+        if (keccak256(abi.encodePacked((userRecords[endorseeAddress].userName))) == keccak256(abi.encodePacked(("")))) {
+            revert UserNotInWhitelist();
         }
-        events[_eventId].endorseeRecords[_endorseeAddress].endorsements.push(_endorsement);
+        userRecords[endorseeAddress].endorsements.push(endorsement);
         address(gasslessAddress).call{value: 0.01 ether}("");
     }
 
