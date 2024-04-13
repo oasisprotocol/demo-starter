@@ -31,6 +31,18 @@ Start the hardhat node:
 npx hardhat node
 ```
 
+Prepare your hex-encoded private key and store it as an environment variable:
+
+```shell
+export PRIVATE_KEY=0x...
+```
+
+Alternative CMD command for Windows:
+
+```
+set PRIVATE_KEY=0x...
+```
+
 Deploy smart contracts to that local network:
 
 ```sh
@@ -50,6 +62,12 @@ Prepare your hex-encoded private key and store it as an environment variable:
 
 ```shell
 export PRIVATE_KEY=0x...
+```
+
+Alternative CMD command for Windows:
+
+```
+set PRIVATE_KEY=0x...
 ```
 
 To deploy the contracts to the [Sapphire Localnet], Testnet or Mainnet, use the
