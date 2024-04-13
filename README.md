@@ -84,7 +84,7 @@ account nonce.
 When click button Connect Wallet, in some case you will constantly get the error: 
 **Uncaught (in promise) Error: [useEthereumStore] Request account failed!**, 
 
-To resolve it, try to open Metamask and manually connect site once time
+To resolve it, try to open MetaMask and manually connect site once time
 
 ![alt text](manually-connect-site-1.png)  ![alt text](manually-connect-site-2.png)
 
