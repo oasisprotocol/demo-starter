@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.1",
+    "EthereumUtils.sol": "link:@oasisprotocol/sapphire-contracts/contracts/EthereumUtils.sol",
     "ethers": "^6.10.0"
   },
   "devDependencies": {

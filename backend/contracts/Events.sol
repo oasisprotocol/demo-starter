@@ -7,7 +7,7 @@ import {EthereumUtils} from "@oasisprotocol/sapphire-contracts/contracts/Ethereu
 
 contract Events {
     struct Endorsee {
-        string endorseeName;
+        bytes endorseeNameEncrypted;
         string[] endorsements;
     }
 
@@ -17,7 +17,7 @@ contract Events {
         uint8 startDate;
         uint8 endDate;
         bytes32 passwordHash;
-        mapping(address => Endorsee) endorseeRecords;
+        mapping(bytes => Endorsee) endorseeRecords;
     }
 
     mapping(uint256 => EventDetails) public events;
@@ -26,22 +26,25 @@ contract Events {
     bytes32 gasslessKey;
     address gasslessAddress;
     address internal owner;
-    // bytes32 internal constant encKey;
+    bytes32 internal encKey;
 
     error EventNotStarted();
     error DeadlineExpired();
     error NotEndorsee();
     error NotGasslessAddress();
+    error NotOwner();
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can call this function");
+        if (msg.sender != owner) {
+            revert NotOwner();
+        }
         _;
     }
 
     constructor() {
         (gasslessAddress, gasslessKey) = EthereumUtils.generateKeypair();
         owner = msg.sender;
-        // encKey = bytes32(Sapphire.randomBytes(32, ""));
+        encKey = bytes32(Sapphire.randomBytes(32, ""));
     }
 
     function newEvent(
@@ -59,12 +62,12 @@ contract Events {
         events[eventCount + 1].endDate = _endDate;
         events[eventCount + 1].passwordHash = keccak256(abi.encodePacked(_eventPasswordString));
         for (uint i = 0; i < eventCount; i++) {
-            address newEndorseeAddress = _newEndorseeAddresses[i];
-            string memory newEndorseeName = _newEndorseeNames[i];
-            events[i].endorseeRecords[newEndorseeAddress].endorseeName = newEndorseeName;
-            // TODO: encrypt & decrypt addresses & usernames with sapphire library
-            // bytes memory pcEncoded = abi.encode(PayoutCertificate(coupon, payoutAddr));
-            // bytes memory gasslessKey = Sapphire.encrypt(encKey, 0, pcEncoded, "");
+            bytes memory newAddressEncoded = abi.encode(_newEndorseeAddresses[i]);
+            bytes memory newNameEncoded = abi.encode(_newEndorseeNames[i]);
+            bytes memory newAddressEncrypted = Sapphire.encrypt(encKey, 0, newAddressEncoded, "");
+            bytes memory newNameEncrypted = Sapphire.encrypt(encKey, 0, newNameEncoded, "");
+
+            events[i].endorseeRecords[newAddressEncrypted].endorseeNameEncrypted = newNameEncrypted;
         }
         address(gasslessAddress).call{value: 0.01 ether}("");
         eventCount++;
@@ -77,9 +80,22 @@ contract Events {
         uint256 _nonce,
         uint256 _eventId
     ) external view returns (bytes memory) {
+        bytes memory endorseeAddressEncoded = abi.encode(_endorseeAddress);
+        bytes memory endorseeAddressEncrypted = Sapphire.encrypt(
+            encKey,
+            0,
+            endorseeAddressEncoded,
+            ""
+        );
         if (
             keccak256(
-                abi.encodePacked((events[_eventId].endorseeRecords[_endorseeAddress].endorseeName))
+                abi.encodePacked(
+                    (
+                        events[_eventId]
+                            .endorseeRecords[endorseeAddressEncrypted]
+                            .endorseeNameEncrypted
+                    )
+                )
             ) == keccak256(abi.encodePacked(("")))
         ) {
             revert NotEndorsee();
@@ -99,7 +115,10 @@ contract Events {
                 gasLimit: 250_000, //update based on gas checks
                 to: address(this),
                 value: 0,
-                data: abi.encodeCall(this.endorse, (_endorsement, _endorseeAddress, _eventId)),
+                data: abi.encodeCall(
+                    this.endorse,
+                    (_endorsement, endorseeAddressEncrypted, _eventId)
+                ),
                 chainId: block.chainid
             })
         );
@@ -108,7 +127,7 @@ contract Events {
 
     function endorse(
         string memory _endorsement,
-        address _endorseeAddress,
+        bytes memory _endorseeAddressEncrypted,
         uint256 _eventId
     ) public payable {
         if (block.timestamp < events[_eventId].startDate) {
@@ -122,12 +141,18 @@ contract Events {
         }
         if (
             keccak256(
-                abi.encodePacked((events[_eventId].endorseeRecords[_endorseeAddress].endorseeName))
+                abi.encodePacked(
+                    (
+                        events[_eventId]
+                            .endorseeRecords[_endorseeAddressEncrypted]
+                            .endorseeNameEncrypted
+                    )
+                )
             ) == keccak256(abi.encodePacked(("")))
         ) {
             revert NotEndorsee();
         }
-        events[_eventId].endorseeRecords[_endorseeAddress].endorsements.push(_endorsement);
+        events[_eventId].endorseeRecords[_endorseeAddressEncrypted].endorsements.push(_endorsement);
         address(gasslessAddress).call{value: 0.01 ether}("");
     }
 

@@ -8,6 +8,9 @@ dependencies:
   '@openzeppelin/contracts':
     specifier: ^4.8.1
     version: 4.9.6
+  EthereumUtils.sol:
+    specifier: link:@oasisprotocol/sapphire-contracts/contracts/EthereumUtils.sol
+    version: link:@oasisprotocol/sapphire-contracts/contracts/EthereumUtils.sol
   ethers:
     specifier: ^6.10.0
     version: 6.11.1
