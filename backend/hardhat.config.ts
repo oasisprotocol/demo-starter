@@ -44,15 +44,15 @@ task('deploy').setAction(async (args, hre) => {
 
   // For deployment unwrap the provider to enable contract verification.
   const uwProvider = new JsonRpcProvider(hre.network.config.url);
-  const MessageBox = await hre.ethers.getContractFactory(
-    'MessageBox',
+  const Events = await hre.ethers.getContractFactory(
+    'Events',
     new hre.ethers.Wallet(accounts[0], uwProvider),
   );
-  const messageBox = await MessageBox.deploy();
-  await messageBox.waitForDeployment();
+  const events = await Events.deploy();
+  await events.waitForDeployment();
 
-  console.log(`MessageBox address: ${await messageBox.getAddress()}`);
-  return messageBox;
+  console.log(`Events address: ${await events.getAddress()}`);
+  return events;
 });
 
 // Read message from the MessageBox.
