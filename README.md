@@ -112,6 +112,6 @@ Then copy the `dist` folder to a place of your `/my/public/path` location.
 When click button Connect Wallet, in some case you will constantly get the error: 
 `Uncaught (in promise) Error: [useEthereumStore] Request account failed!`
 
-To resolve it, try to open MetaMask and manually connect site once time
+To resolve it, try to open MetaMask and manually connect site:
 
 ![alt text](docs/manually-connect-site-1.png)  ![alt text](docs/manually-connect-site-2.png)
