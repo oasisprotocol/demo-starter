@@ -114,4 +114,5 @@ When click button Connect Wallet, in some case you will constantly get the error
 
 To resolve it, try to open MetaMask and manually connect site:
 
-![alt text](docs/manually-connect-site-1.png)  ![alt text](docs/manually-connect-site-2.png)
+![MetaMask: Connected sites](docs/manually-connect-site-1.png)
+![MetaMask: Manually connect to the current site](docs/manually-connect-site-2.png)
