@@ -28,6 +28,12 @@ and store it as an environment variable:
 export PRIVATE_KEY=0x...
 ```
 
+Alternative CMD command for Windows:
+
+```
+set PRIVATE_KEY=0x...
+```
+
 To deploy the contracts to the [Sapphire Localnet], Testnet or Mainnet, use
 one of the following commands:
 
@@ -100,3 +106,13 @@ pnpm build-only --base=/my/public/path/
 ```
 
 Then copy the `dist` folder to a place of your `/my/public/path` location.
+
+## Troubleshooting
+
+When click button Connect Wallet, in some case you will constantly get the error: 
+`Uncaught (in promise) Error: [useEthereumStore] Request account failed!`
+
+To resolve it, try to open MetaMask and manually connect site:
+
+![MetaMask: Connected sites](docs/manually-connect-site-1.png)
+![MetaMask: Manually connect to the current site](docs/manually-connect-site-2.png)
