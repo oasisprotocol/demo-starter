@@ -9,8 +9,107 @@ on:
       - main
 
 jobs:
-  test-backend-frontend:
-    name: test-backend-frontend
+  test-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - uses: pnpm/action-setup@v2.4.0
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pnpm install
+
+      - name: Build backend
+        working-directory: backend
+        run: pnpm build
+
+      - name: Test backend
+        working-directory: backend
+        run: pnpm test
+
+  test-backend-sapphire:
+    runs-on: ubuntu-latest
+    services:
+      sapphire-localnet-ci:
+        image: ghcr.io/oasisprotocol/sapphire-localnet:latest
+        ports:
+          - 8545:8545
+          - 8546:8546
+        env:
+          OASIS_DEPOSIT: /oasis-deposit -test-mnemonic -n 5
+        options: >-
+          --rm
+          --health-cmd="/oasis-node debug control wait-ready -a unix:/serverdir/node/net-runner/network/client-0/internal.sock"
+          --health-start-period=90s
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - uses: pnpm/action-setup@v2.4.0
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pnpm install
+
+      - name: Build backend
+        working-directory: backend
+        run: pnpm build
+
+      - name: Test backend
+        working-directory: backend
+        run: pnpm test -- --network sapphire-localnet
+
+  test-frontend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
