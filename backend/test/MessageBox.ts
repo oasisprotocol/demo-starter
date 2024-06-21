@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { config, ethers } from "hardhat";
 import "@nomicfoundation/hardhat-chai-matchers";
+import {MessagePrefix, hashMessage, concat, toUtf8Bytes, toUtf8String} from "ethers";
 
 describe("MessageBox", function () {
   async function deployMessageBox() {
@@ -18,15 +19,17 @@ describe("MessageBox", function () {
     // Check, if author is correctly set.
     expect(await messageBox.author()).to.equal(await (await ethers.provider.getSigner(0)).getAddress());
 
+    const siweMsg = toUtf8String(await messageBox.getSiweMsg());
+
     // Author should read a message.
     const accounts = config.networks.hardhat.accounts;
-    const privKey = ethers.HDNodeWallet.fromMnemonic(ethers.Mnemonic.fromPhrase(accounts.mnemonic), accounts.path+'/0').privateKey;
-    const auth = (new ethers.SigningKey(privKey)).sign(ethers.keccak256(await messageBox.getSiweMsg()));
+    const acc = ethers.HDNodeWallet.fromMnemonic(ethers.Mnemonic.fromPhrase(accounts.mnemonic), accounts.path+'/0');
+    const auth = ethers.Signature.from(await acc.signMessage(siweMsg));
     expect(await messageBox.message(auth)).to.equal("hello world");
 
     // Anyone else trying to read the message should fail.
-    const privKey2 = ethers.HDNodeWallet.fromMnemonic(ethers.Mnemonic.fromPhrase(accounts.mnemonic), accounts.path+'/1').privateKey;
-    const auth2 = (new ethers.SigningKey(privKey2)).sign(ethers.keccak256(new Uint8Array()));
+    const acc2 = ethers.HDNodeWallet.fromMnemonic(ethers.Mnemonic.fromPhrase(accounts.mnemonic), accounts.path+'/1');
+    const auth2 = ethers.Signature.from(await acc2.signMessage(siweMsg))
     await expect(messageBox.message(auth2)).to.be.reverted;
 
   });
