@@ -4,14 +4,15 @@ import {
   BrowserProvider,
   type Eip1193Provider,
   JsonRpcProvider,
-  JsonRpcSigner,
   type Provider,
   type Signer,
-  toBeHex,
+  toBeHex, toUtf8Bytes,
 } from 'ethers';
 import { defineStore } from 'pinia';
 import { markRaw, type Raw, ref, shallowRef } from 'vue';
 import { MetaMaskNotInstalledError } from '@/utils/errors';
+
+export { Signature, toUtf8Bytes } from 'ethers';
 
 export enum Network {
   Unknown = 0,
@@ -61,7 +62,7 @@ export function networkName(network?: Network): string {
 
 declare global {
   interface Window {
-    ethereum: BrowserProvider & Eip1193Provider & sapphire.SapphireAnnex;
+    ethereum: BrowserProvider & sapphire.EIP2696_EthereumProvider;
   }
 }
 
@@ -77,7 +78,6 @@ export const useEthereumStore = defineStore('ethereum', () => {
     }),
   );
 
-  const signer = shallowRef<Signer | BrowserProvider | Raw<object>>();
   const unwrappedSigner = shallowRef<Signer>();
 
   const network = ref(Network.FromConfig);
@@ -102,20 +102,11 @@ export const useEthereumStore = defineStore('ethereum', () => {
 
     const isSapphire = sapphire.NETWORKS[chainId];
 
-    let sapphireSigner: ReturnType<typeof sapphire.wrap>;
-
-    if (isSapphire) {
-      const signer = await browserProvider.getSigner();
-      sapphireSigner = sapphire.wrap<JsonRpcSigner>(signer);
-    }
-
-    signer.value = isSapphire ? markRaw(sapphireSigner!) : await browserProvider.getSigner();
-
-    unwrappedSigner.value = await browserProvider.getSigner(addr);
     provider.value = isSapphire
-      ? markRaw(sapphire.wrap(browserProvider.provider))
+      ? markRaw(sapphire.wrapEthereumProvider(browserProvider.provider))
       : browserProvider.provider;
     unwrappedProvider.value = browserProvider.provider;
+    unwrappedSigner.value = await browserProvider.getSigner(addr);
     network.value = chainId;
     address.value = addr;
   }
@@ -131,10 +122,10 @@ export const useEthereumStore = defineStore('ethereum', () => {
       throw new Error('[useEthereumStore] Request account failed!');
     }
 
-    await init(accounts[0], eth as unknown as Eip1193Provider);
+    await init(accounts[0], eth);
 
     eth.on('accountsChanged', (accountsChanged: string[]) => {
-      init(accountsChanged[0], eth as unknown as Eip1193Provider);
+      init(accountsChanged[0], eth);
     });
     eth.on('chainChanged', () => {
       window.location.reload();
@@ -219,7 +210,6 @@ export const useEthereumStore = defineStore('ethereum', () => {
 
   return {
     unwrappedSigner,
-    signer,
     unwrappedProvider,
     provider,
     address,
