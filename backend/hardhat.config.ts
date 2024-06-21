@@ -5,7 +5,7 @@ import '@nomicfoundation/hardhat-ethers';
 import '@oasisprotocol/sapphire-hardhat';
 import '@typechain/hardhat';
 import canonicalize from 'canonicalize';
-import {JsonRpcProvider} from "ethers";
+import {JsonRpcProvider, toUtf8String} from "ethers";
 import 'hardhat-watcher';
 import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names';
 import { HardhatUserConfig, task } from 'hardhat/config';
@@ -59,7 +59,7 @@ task('message')
     await hre.run('compile');
 
     const messageBox = await hre.ethers.getContractAt('MessageBox', args.address);
-    const auth = (new hre.ethers.SigningKey(accounts[0])).sign(hre.ethers.keccak256(await messageBox.getSiweMsg()));
+    const auth = hre.ethers.Signature.from(await (await hre.ethers.getSigners())[0].signMessage(toUtf8String(await messageBox.getSiweMsg())));
     const message = await messageBox.message(auth);
     const author = await messageBox.author();
     console.log(`The message is: ${message}, author: ${author}`);
