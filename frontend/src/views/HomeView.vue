@@ -2,12 +2,13 @@
 import { onMounted, ref } from 'vue';
 
 import { useMessageBox, useUnwrappedMessageBox } from '../contracts';
-import { Network, useEthereumStore } from '../stores/ethereum';
+import { Network, Signature, toUtf8Bytes, useEthereumStore } from '../stores/ethereum';
 import { abbrAddr } from '@/utils/utils';
 import AppButton from '@/components/AppButton.vue';
 import MessageLoader from '@/components/MessageLoader.vue';
 import JazzIcon from '@/components/JazzIcon.vue';
 import { retry } from '@/utils/promise';
+import {toUtf8String} from "ethers";
 
 const eth = useEthereumStore();
 const messageBox = useMessageBox();
@@ -32,7 +33,9 @@ function handleError(error: Error, errorMessage: string) {
 }
 
 async function fetchMessage(): Promise<Message> {
-  const message = await messageBox.value!.message();
+  const siweMsg = toUtf8String(await messageBox.value!.getSiweMsg());
+  const auth = Signature.from(await eth.unwrappedSigner!.signMessage(siweMsg));
+  const message = await messageBox.value!.message(auth);
   const author = await messageBox.value!.author();
 
   return { message, author };
