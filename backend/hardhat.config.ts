@@ -59,7 +59,8 @@ task('message')
     await hre.run('compile');
 
     const messageBox = await hre.ethers.getContractAt('MessageBox', args.address);
-    const message = await messageBox.message();
+    const auth = (new hre.ethers.SigningKey(accounts[0])).sign(hre.ethers.keccak256(await messageBox.getSiweMsg()));
+    const message = await messageBox.message(auth);
     const author = await messageBox.author();
     console.log(`The message is: ${message}, author: ${author}`);
   });
