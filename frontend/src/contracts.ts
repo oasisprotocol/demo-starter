@@ -18,12 +18,12 @@ export function useMessageBox(): ComputedRef<MessageBox | null> {
       return null;
     }
 
-    if (!eth.signer) {
-      console.error('[useMessageBox] Signer is not initialized');
+    if (!eth.provider) {
+      console.error('[useMessageBox] Provider is not initialized');
       return null;
     }
 
-    return MessageBox__factory.connect(addr, eth.signer as ContractRunner);
+    return MessageBox__factory.connect(addr, eth.unwrappedSigner as ContractRunner);
   });
 }
 
