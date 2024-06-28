@@ -39,13 +39,14 @@ task(TASK_EXPORT_ABIS, async (_args, hre) => {
 
 // Unencrypted contract deployment.
 task('deploy')
+  .addPositionalParam('domain', 'dApp domain which Metamask will be allowed for signing-in')
   .setAction(async (args, hre) => {
     await hre.run('compile');
 
     // For deployment unwrap the provider to enable contract verification.
     const uwProvider = new JsonRpcProvider(hre.network.config.url);
     const MessageBox = await hre.ethers.getContractFactory('MessageBox', new hre.ethers.Wallet(accounts[0], uwProvider));
-    const messageBox = await MessageBox.deploy();
+    const messageBox = await MessageBox.deploy(args.domain);
     await messageBox.waitForDeployment();
 
     console.log(`MessageBox address: ${await messageBox.getAddress()}`);
