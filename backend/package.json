@@ -43,8 +43,8 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.7",
     "@nomicfoundation/hardhat-ethers": "^3.0.5",
-    "@oasisprotocol/sapphire-contracts": "^0.2.7",
-    "@oasisprotocol/sapphire-hardhat": "link:../../sapphire-paratime/integrations/hardhat",
+    "@oasisprotocol/sapphire-contracts": "^0.2.11",
+    "@oasisprotocol/sapphire-hardhat": "^2.22.2-next.1",
     "@typechain/ethers-v6": "^0.5.1",
     "@typechain/hardhat": "^9.1.0",
     "@types/chai": "^4.3.4",

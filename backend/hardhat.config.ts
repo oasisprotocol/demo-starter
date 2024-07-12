@@ -5,10 +5,11 @@ import '@nomicfoundation/hardhat-ethers';
 import '@oasisprotocol/sapphire-hardhat';
 import '@typechain/hardhat';
 import canonicalize from 'canonicalize';
-import {JsonRpcProvider, toUtf8String} from "ethers";
+import {JsonRpcProvider} from "ethers";
 import 'hardhat-watcher';
 import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names';
 import { HardhatUserConfig, task } from 'hardhat/config';
+import {SiweMessage} from 'siwe';
 import 'solidity-coverage';
 
 const TASK_EXPORT_ABIS = 'export-abis';
@@ -60,8 +61,19 @@ task('message')
     await hre.run('compile');
 
     const messageBox = await hre.ethers.getContractAt('MessageBox', args.address);
-    const auth = hre.ethers.Signature.from(await (await hre.ethers.getSigners())[0].signMessage(toUtf8String(await messageBox.getSiweMsg())));
-    const message = await messageBox.message(auth);
+    const domain = await messageBox.domain();
+
+    const acc = new hre.ethers.Wallet(accounts[0], hre.ethers.provider);
+    const siweMsg = new SiweMessage({
+      domain,
+      address: await acc.getAddress(),
+      uri: domain.includes(':')?domain:`http://${domain}`,
+      version: "1",
+      chainId: Number((await hre.ethers.provider.getNetwork()).chainId)
+    }).toMessage();
+    const sig = hre.ethers.Signature.from(await acc.signMessage(siweMsg));
+    const bearer = await messageBox.login(siweMsg, sig);
+    const message = await messageBox.message(bearer);
     const author = await messageBox.author();
     console.log(`The message is: ${message}, author: ${author}`);
   });
@@ -101,7 +113,7 @@ const config: HardhatUserConfig = {
       accounts,
     },
     'sapphire-testnet': {
-      url: 'https://testnet.sapphire.oasis.dev',
+      url: 'https://testnet.sapphire.oasis.io',
       chainId: 0x5aff,
       accounts,
     },

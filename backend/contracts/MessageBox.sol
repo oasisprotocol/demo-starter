@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./SiweAuth.sol";
+import "@oasisprotocol/sapphire-contracts/contracts/auth/SiweAuth.sol";
 
 contract MessageBox is SiweAuth {
     string private _message;
     address public author;
 
-    modifier _authorOnly(bytes calldata bearer) {
-        if (authMsgSender(bearer) != author) {
+
+    modifier isAuthor(bytes calldata bearer) {
+        // Use msg.sender for transactions and signed calls, fallback to
+        // checking bearer.
+        if (msg.sender != author && authMsgSender(bearer) != author) {
             revert("not allowed");
         }
         _;
@@ -22,7 +25,7 @@ contract MessageBox is SiweAuth {
         author = msg.sender;
     }
 
-    function message(bytes calldata bearer) external view _authorOnly(bearer) returns (string memory) {
-      return _message;
+    function message(bytes calldata bearer) external view isAuthor(bearer) returns (string memory) {
+        return _message;
     }
 }

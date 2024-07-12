@@ -16,12 +16,14 @@
     "@metamask/detect-provider": "^2.0.0",
     "@metamask/jazzicon": "^2.0.0",
     "@oasisprotocol/demo-starter-backend": "workspace:^",
-    "@oasisprotocol/sapphire-paratime": "link:../../sapphire-paratime/clients/js",
+    "@oasisprotocol/sapphire-contracts": "^0.2.11",
+    "@oasisprotocol/sapphire-paratime": "^2.0.1",
     "ethers": "^6.10.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-responsive": "^10.0.0",
-    "react-router-dom": "^6.27.0"
+    "react-router-dom": "^6.27.0",
+    "siwe": "^2.3.2"
   },
   "devDependencies": {
     "@types/react": "^18.3.10",
