@@ -1,23 +1,23 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 
-import { useMessageBox, useUnwrappedMessageBox } from '../contracts';
+import { useMessageBox } from '../contracts';
 import { Network, Signature, toUtf8Bytes, useEthereumStore } from '../stores/ethereum';
 import { abbrAddr } from '@/utils/utils';
 import AppButton from '@/components/AppButton.vue';
 import MessageLoader from '@/components/MessageLoader.vue';
 import JazzIcon from '@/components/JazzIcon.vue';
 import { retry } from '@/utils/promise';
-import {toUtf8String} from "ethers";
+import { SiweMessage } from 'siwe';
 
 const eth = useEthereumStore();
 const messageBox = useMessageBox();
-const uwMessageBox = useUnwrappedMessageBox();
 
 const errors = ref<string[]>([]);
 const message = ref('');
 const author = ref('');
 const newMessage = ref('');
+const bearer = ref('');
 const isLoading = ref(true);
 const isSettingMessage = ref(false);
 const isCorrectNetworkSelected = ref<Boolean>(true);
@@ -33,9 +33,20 @@ function handleError(error: Error, errorMessage: string) {
 }
 
 async function fetchMessage(): Promise<Message> {
-  const siweMsg = toUtf8String(await messageBox.value!.getSiweMsg());
-  const auth = Signature.from(await eth.unwrappedSigner!.signMessage(siweMsg));
-  const message = await messageBox.value!.message(auth);
+  if (bearer.value=='') {
+      const domain = await messageBox.value!.domain();
+      const siweMsg = new SiweMessage({
+        domain,
+        address: await eth.unwrappedSigner!.getAddress(),
+        uri: `http://${domain}`,
+        version: "1",
+        chainId: Number(await eth.network.toString())
+      }).toMessage();
+      const sig = Signature.from(await eth.unwrappedSigner!.signMessage(siweMsg));
+      bearer.value = await messageBox.value!.login(siweMsg, sig);
+  }
+
+  const message = await messageBox.value!.message(bearer.value);
   const author = await messageBox.value!.author();
 
   return { message, author };

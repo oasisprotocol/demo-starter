@@ -103,7 +103,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
     const isSapphire = sapphire.NETWORKS[chainId];
 
     provider.value = isSapphire
-      ? markRaw(sapphire.wrapEthereumProvider(browserProvider.provider))
+      ? markRaw(sapphire.wrapEthereumProvider(browserProvider.provider as unknown as sapphire.EIP2696_EthereumProvider)) as unknown as Provider
       : browserProvider.provider;
     unwrappedProvider.value = browserProvider.provider;
     unwrappedSigner.value = await browserProvider.getSigner(addr);
