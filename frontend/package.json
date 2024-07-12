@@ -20,9 +20,11 @@
     "@metamask/detect-provider": "^2.0.0",
     "@metamask/jazzicon": "^2.0.0",
     "@oasisprotocol/demo-starter-backend": "workspace:^",
-    "@oasisprotocol/sapphire-paratime": "^1.3.2",
+    "@oasisprotocol/sapphire-contracts": "github:oasisprotocol/sapphire-paratime#path:contracts&matevz/sapphire-contracts-auth",
+    "@oasisprotocol/sapphire-paratime": "link:../../sapphire-paratime/clients/js",
     "ethers": "^6.10.0",
     "pinia": "^2.0.28",
+    "siwe": "^2.3.2",
     "vue": "^3.2.45",
     "vue-content-loader": "^2.0.1",
     "vue-router": "^4.1.6"
