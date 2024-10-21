@@ -1,0 +1,116 @@
+.button {
+  width: auto;
+  border-radius: 60px;
+  border: 1px transparent solid;
+  box-shadow: none;
+  cursor: pointer;
+  font-style: normal;
+  outline: none;
+  text-decoration: none;
+  user-select: none;
+  text-transform: none;
+  text-align: center;
+  font-family: 'Figtree Variable', system-ui, sans-serif;
+
+  > label {
+    display: flex;
+    vertical-align: middle;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  > * {
+    font-family: 'Figtree Variable', system-ui, sans-serif;
+  }
+
+  &:not(.buttonDisabled) > * {
+    cursor: pointer;
+  }
+}
+
+.buttonSmall {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  padding: 0.375rem 0.75rem;
+  border-radius: 4px;
+}
+
+.buttonMedium {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 22.5px;
+  padding: 0.78125rem 4.5rem;
+}
+
+.buttonSolid {
+  &.buttonPrimary {
+    background-color: var(--brand-extra-dark);
+    color: var(--white);
+    border: 1px var(--white) solid;
+  }
+
+  &.buttonSecondary {
+    background-color: var(--brand-blue);
+    color: var(--white);
+    border: 2px var(--brand-blue) solid;
+  }
+
+  &.buttonSuccess {
+    background: var(--black);
+    color: var(--white);
+    border: 1px var(--black) solid;
+  }
+}
+
+.buttonOutline {
+  &.buttonPrimary {
+    background-color: var(--white);
+    color: var(--brand-extra-dark);
+    border: 1px var(--brand-extra-dark) solid;
+  }
+
+  &.buttonSecondary {
+    background-color: var(--white);
+    color: var(--brand-blue);
+    border: 2px var(--brand-blue) solid;
+  }
+
+  &.buttonSuccess {
+    background-color: var(--white);
+    color: var(--black);
+    border: 1px var(--black) solid;
+  }
+}
+
+.buttonText {
+  &.buttonPrimary,
+  &.buttonSecondary {
+    background-color: transparent;
+    color: var(--brand-extra-dark);
+    border: transparent;
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 22.5px;
+    padding: 0.5rem;
+  }
+}
+
+.buttonDisabled {
+  cursor: not-allowed;
+  background-color: var(--gray-extra-light);
+  opacity: 0.5;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.startSlotLayout {
+  display: flex;
+  margin: 0 auto;
+  align-items: center;
+  cursor: pointer;
+}

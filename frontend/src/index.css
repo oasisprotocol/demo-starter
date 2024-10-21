@@ -1,0 +1,118 @@
+@import '@fontsource-variable/figtree/index.css';
+@import '@fontsource-variable/roboto-mono/index.css';
+
+:root {
+  --white: #fff;
+  --black: #000;
+  --dark: #1b0f33;
+  --brand-extra-dark: #000062;
+  --brand-blue: #0500e1;
+  --brand-dark-blue: #1e1e73;
+  --gray-light: #fafafa;
+  --gray: #b0aabd;
+  --gray-blue-border: #2c3bd533;
+  --brand-extra-dark-75: #000062bf;
+  --brand-extra-dark-21: #00006236;
+  --brand-extra-dark-50: #00006280;
+  --gray-dark-box-shadow: #222f3f3d;
+  --gray-extra-dark: #242629;
+  --gray-dark: #eae6f0;
+  --gray-extra-light: #b0aabd;
+  --gray-medium-dark: #585266;
+  --green: #4cd4a9;
+  --green-25: #4cd4a940;
+  --red: #ff0e0e;
+  --orange: #ed6c02;
+  --orange-light: #fff0e4;
+}
+
+/** Use Figtree for "…" instead of Roboto Mono. */
+@font-face {
+  font-family: 'Roboto Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 700;
+  src: url('@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+2026;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Figtree Variable', system-ui, sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 150%;
+  color: var(--black);
+  text-align: left;
+  min-height: 100dvh;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+p,
+span {
+  &.body {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+
+  &.small {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 18px;
+  }
+
+  &.ellipsis {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    height: 24px;
+  }
+
+  &.mute {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: var(--gray-medium-dark);
+  }
+
+  &.error.error {
+    color: var(--red);
+  }
+}
+
+.mono {
+  font-family: 'Roboto Mono Variable', monospace, system-ui;
+  font-style: normal;
+}
+
+h2 {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 33.8px;
+  letter-spacing: -0.03em;
+  color: var(--brand-blue);
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 25.2px;
+  color: var(--brand-extra-dark);
+}
