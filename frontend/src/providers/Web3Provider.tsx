@@ -1,9 +1,15 @@
 import { FC, PropsWithChildren, useCallback, useEffect, useState } from 'react'
+import * as sapphire from '@oasisprotocol/sapphire-paratime'
 import { CHAINS, VITE_NETWORK } from '../constants/config'
 import { handleKnownErrors, handleKnownEthersErrors, UnknownNetworkError } from '../utils/errors'
 import { Web3Context, Web3ProviderContext, Web3ProviderState } from './Web3Context'
 import { useEIP1193 } from '../hooks/useEIP1193'
-import { BrowserProvider, EthersError } from 'ethers'
+import { BrowserProvider, EthersError, JsonRpcProvider } from 'ethers'
+import { MessageBox__factory } from '@oasisprotocol/demo-starter-backend'
+import { retry } from '../utils/promise.utils'
+import { Message } from '../types'
+
+const { VITE_MESSAGE_BOX_ADDR } = import.meta.env
 
 let EVENT_LISTENERS_INITIALIZED = false
 
@@ -16,6 +22,10 @@ const web3ProviderInitialState: Web3ProviderState = {
   chainId: null,
   nativeCurrency: null,
   isInteractingWithChain: false,
+  provider: new JsonRpcProvider(import.meta.env.VITE_WEB3_GATEWAY, undefined, {
+    staticNetwork: true,
+  }),
+  isSapphire: null,
 }
 
 export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
@@ -34,7 +44,6 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.account])
 
-  // @ts-ignore TS6133: Later usage
   const interactingWithChainWrapper = useCallback(
     <Args extends unknown[], R>(fn: (...args: Args) => Promise<R>) =>
       async (...args: Args): Promise<R> => {
@@ -75,7 +84,7 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const _setNetworkSpecificVars = (chainId: bigint, browserProvider = state.browserProvider!): void => {
     if (!browserProvider) {
-      throw new Error('[Web3Context] Sapphire provider is required!')
+      throw new Error('[Web3Context] Browser provider is required!')
     }
 
     if (!CHAINS.has(chainId)) {
@@ -137,6 +146,7 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
         browserProvider,
         account,
         chainId,
+        isSapphire: !!sapphire.NETWORKS[Number(chainId)],
       }))
 
       _addEventListenersOnce(window.ethereum)
@@ -199,6 +209,46 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
     return (await browserProvider.getFeeData()).gasPrice ?? 0n
   }
 
+  const _getSigner = async () => {
+    const { isSapphire, browserProvider } = state
+
+    if (isSapphire) {
+      const signer = await browserProvider!.getSigner()
+      return sapphire.wrap(signer)
+    }
+
+    return await browserProvider!.getSigner()
+  }
+
+  const getMessage = async () => {
+    const signer = await _getSigner()
+    const messageBox = MessageBox__factory.connect(VITE_MESSAGE_BOX_ADDR, signer)
+
+    const [message, author] = await Promise.all([messageBox.message(), messageBox.author()])
+
+    return { message, author }
+  }
+
+  const setMessage = async (message: string): Promise<Message> => {
+    const signer = await _getSigner()
+    const messageBox = MessageBox__factory.connect(VITE_MESSAGE_BOX_ADDR, signer)
+
+    await messageBox.setMessage(message)
+
+    await retry<Promise<Message | null>>(getMessage, retrievedMessage => {
+      if (retrievedMessage?.message !== message) {
+        throw new Error('Unable to determine if the new message has been correctly set!')
+      }
+
+      return retrievedMessage
+    })
+
+    return {
+      author: await signer.getAddress(),
+      message,
+    }
+  }
+
   const providerState: Web3ProviderContext = {
     state,
     isProviderAvailable,
@@ -206,6 +256,8 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
     switchNetwork,
     getTransaction,
     getGasPrice,
+    getMessage,
+    setMessage: interactingWithChainWrapper(setMessage),
   }
 
   return <Web3Context.Provider value={providerState}>{children}</Web3Context.Provider>

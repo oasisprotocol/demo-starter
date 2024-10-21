@@ -1,5 +1,6 @@
 import { createContext } from 'react'
-import { BrowserProvider, TransactionResponse } from 'ethers'
+import { BrowserProvider, JsonRpcProvider, TransactionResponse } from 'ethers'
+import { Message } from '../types'
 
 export interface Web3ProviderState {
   isConnected: boolean
@@ -13,7 +14,9 @@ export interface Web3ProviderState {
     decimals: number
   } | null
   isInteractingWithChain: boolean
+  isSapphire: boolean | null
   chainId: bigint | null
+  provider: JsonRpcProvider
 }
 
 export interface Web3ProviderContext {
@@ -23,6 +26,8 @@ export interface Web3ProviderContext {
   getTransaction: (txHash: string) => Promise<TransactionResponse | null>
   getGasPrice: () => Promise<bigint>
   isProviderAvailable: () => Promise<boolean>
+  getMessage: () => Promise<Message>
+  setMessage: (message: string) => Promise<Message>
 }
 
 export const Web3Context = createContext<Web3ProviderContext>({} as Web3ProviderContext)
