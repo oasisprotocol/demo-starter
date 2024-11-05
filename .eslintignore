@@ -21,3 +21,5 @@ backend/abis
 backend/artifacts
 backend/cache
 backend/src
+backend/typechain-types
+backend/lib
