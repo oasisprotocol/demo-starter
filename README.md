@@ -2,10 +2,10 @@
 
 This is a skeleton for confidential Oasis dApps:
 
-- `backend` contains the example MessageBox solidity contract, deployment and
-  testing utils.
-- `frontend` contains a Vue-based web application communicating with the
-  backend smart contract.
+- `backend` contains the example MessageBox Solidity contract and Hardhat utils
+  for deploying the contract and managing it via command line.
+- `frontend` contains a Vue-based web application which communicates with your
+  smart contract.
 
 This monorepo is set up for `pnpm`. Install dependencies by running:
 
@@ -21,8 +21,32 @@ Move to the `backend` folder and build smart contracts:
 pnpm build
 ```
 
-Then, prepare your hex-encoded private key for paying the deployment gas fee
-and store it as an environment variable:
+### Localnet deployment and Testing
+
+Spin up the [Sapphire Localnet] image:
+
+```shell
+docker run -it -p8544-8548:8544-8548 ghcr.io/oasisprotocol/sapphire-localnet
+```
+
+Once Localnet is ready, deploy the contract using the first test account by
+invoking:
+
+```shell
+export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+npx hardhat deploy localhost --network sapphire-localnet
+```
+
+Similarly, you can run tests on Localnet:
+
+```shell
+npx hardhat test --network sapphire-localnet
+```
+
+### Production deployment
+
+Prepare your hex-encoded private key for paying the deployment gas fee and store
+it as an environment variable:
 
 ```shell
 export PRIVATE_KEY=0x...
@@ -30,41 +54,35 @@ export PRIVATE_KEY=0x...
 
 Alternative CMD command for Windows:
 
-```
+```powershell
 set PRIVATE_KEY=0x...
 ```
 
-To deploy the contracts to the [Sapphire Localnet], Testnet or Mainnet, use
-one of the following commands:
+To deploy the contract on Testnet or Mainnet for your dApp that will be
+accessible on `yourdomain.com`:
 
 ```shell
-npx hardhat deploy --network sapphire-localnet
-npx hardhat deploy --network sapphire-testnet
-npx hardhat deploy --network sapphire
+npx hardhat deploy yourdomain.com --network sapphire-testnet
+npx hardhat deploy yourdomain.com --network sapphire
 ```
 
-If you don't need any Sapphire-specific precompiles, you can spin up the
-hardhat node and deploy the contract locally:
+[Sapphire Localnet]: https://github.com/oasisprotocol/oasis-web3-gateway/pkgs/container/sapphire-localnet
 
-```
-npx hardhat node
-npx hardhat deploy --network localhost
-```
+## Frontend
 
-Once deployed, the MessageBox address will be reported. Remember it and store it
-inside the `frontend` folder's `.env.development`, for example:
+Once the contract is deployed, the MessageBox address will be reported. Store it
+inside the `frontend` folder's `.env.development` (for Localnet) or
+`.env.production` (for Testnet or Mainnet - uncomment the appropriate network),
+for example:
 
 ```
 VITE_MESSAGE_BOX_ADDR=0x5FbDB2315678afecb367f032d93F642f64180aa3
 ```
 
-[Sapphire Localnet]: https://github.com/oasisprotocol/oasis-web3-gateway/pkgs/container/sapphire-dev
+### Run locally
 
-## Frontend
-
-After you compiled the backend, updated `.env.development` with the
-corresponding address and a chain ID, move to the `frontend` folder, compile
-and Hot-Reload frontend for Development:
+Run the hot-reload version of the frontend configured in `.env.development` by
+running:
 
 ```sh
 pnpm dev
@@ -75,15 +93,13 @@ browsers (e.g. Brave) may require https connection and a CA-signed certificate
 to access the wallet. In this case, read the section below on how to properly
 deploy your dApp.
 
-You can use one of the deployed test accounts and associated private key with
-MetaMask. If you use the same MetaMask accounts on fresh local networks such as
-Hardhat Node, Foundry Anvil or sapphire-dev docker image, don't forget to
-_clear your account's activity_ each time or manually specify the correct
-account nonce.
+Note: If you use the same MetaMask accounts in your browser and restart the
+sapphire-dev docker image, don't forget to *clear your MetaMask activity* each
+time to fetch correct account nonce.
 
-### Frontend Deployment
+### Production deployment
 
-You can build assets for deployment by running:
+Build assets for deployment by running:
 
 ```sh
 pnpm build
@@ -93,7 +109,7 @@ pnpm build
 
 #### Different Website Base
 
-If you are running dApp on a non-root base dir, add
+If run dApp on a non-root base dir, add
 
 ```
 BASE_DIR=/my/public/path
@@ -106,13 +122,3 @@ pnpm build-only --base=/my/public/path/
 ```
 
 Then copy the `dist` folder to a place of your `/my/public/path` location.
-
-## Troubleshooting
-
-When click button Connect Wallet, in some case you will constantly get the error:
-`Uncaught (in promise) Error: [useEthereumStore] Request account failed!`
-
-To resolve it, try to open MetaMask and manually connect site:
-
-![MetaMask: Connected sites](docs/manually-connect-site-1.png)
-![MetaMask: Manually connect to the current site](docs/manually-connect-site-2.png)
