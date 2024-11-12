@@ -5,7 +5,7 @@ import { StringUtils } from '../utils/string.utils'
 type RevealProps<T> = {
   reveal: boolean
   revealLabel?: string
-  onRevealChange: (reveal: boolean) => void
+  onRevealChange: (reveal: boolean) => Promise<void>
 } & T
 
 export const withReveal =
@@ -16,7 +16,7 @@ export const withReveal =
     const [isRevealed, setIsRevealed] = useState(false)
 
     useEffect(() => {
-      setIsRevealed(isRevealed)
+      setIsRevealed(reveal)
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reveal])
 
@@ -24,12 +24,14 @@ export const withReveal =
       <div
         data-label={revealLabel ?? 'Tap to reveal'}
         className={StringUtils.clsx(isRevealed && !revealLabel ? undefined : classes.mask)}
-        onClick={() => {
+        onClick={async () => {
           if (isRevealed) {
             return
           }
-          setIsRevealed(true)
-          onRevealChange(true)
+          try {
+            await onRevealChange(true)
+            setIsRevealed(true)
+          } catch (e) {}
         }}
       >
         <Component {...(restProps as P1)} />

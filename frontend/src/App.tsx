@@ -15,6 +15,10 @@ const router = createHashRouter([
     errorElement: <RouterErrorBoundary />,
     children: [
       {
+        path: '/',
+        element: <HomePage />,
+      },
+      {
         path: '*',
         element: <HomePage />,
       },

@@ -1,4 +1,4 @@
-import { FC } from 'react'
+import { FC, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import classes from './index.module.css'
 import { ConnectWallet } from '../ConnectWallet'
@@ -8,12 +8,21 @@ import { Button } from '../Button'
 import { StringUtils } from '../../utils/string.utils'
 import { LayoutBase } from '../LayoutBase'
 import { LogoIcon } from '../icons/LogoIcon'
+import { useWeb3 } from '../../hooks/useWeb3'
 
 export const Layout: FC = () => {
+  const { connectWallet } = useWeb3()
   const {
     state: { appError, isMobileScreen },
     clearAppError,
   } = useAppState()
+
+  useEffect(() => {
+    try {
+      connectWallet()
+    } catch (e) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <LayoutBase

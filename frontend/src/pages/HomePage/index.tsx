@@ -19,17 +19,24 @@ export const HomePage: FC = () => {
   const [messageRevealLabel, setMessageRevealLabel] = useState<string>()
   const [messageError, setMessageError] = useState<string | null>(null)
   const [messageValueError, setMessageValueError] = useState<string>()
+  const [hasBeenRevealedBefore, setHasBeenRevealedBefore] = useState(false)
 
   const fetchMessage = async () => {
+    setMessageError(null)
     setMessageRevealLabel('Please sign message and wait...')
 
     try {
       const retrievedMessage = await web3GetMessage()
       setMessage(retrievedMessage)
       setMessageRevealLabel(undefined)
+      setHasBeenRevealedBefore(true)
+
+      return Promise.resolve()
     } catch (ex) {
       setMessageError((ex as Error).message)
-      setMessageRevealLabel('Something went wrong!')
+      setMessageRevealLabel('Something went wrong! Please try again...')
+
+      throw ex
     }
   }
 
@@ -44,11 +51,11 @@ export const HomePage: FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSapphire])
 
-  const handleRevealChanged = () => {
+  const handleRevealChanged = (): Promise<void> => {
     if (!isSapphire) {
-      return
+      return Promise.resolve(void 0)
     }
-    fetchMessage()
+    return fetchMessage()
   }
 
   const handleSetMessage = async () => {
@@ -61,9 +68,15 @@ export const HomePage: FC = () => {
     }
 
     try {
-      const retrievedMessage = await web3SetMessage(messageValue)
-      setMessage(retrievedMessage)
+      await web3SetMessage(messageValue)
       setMessageValue('')
+
+      if (!hasBeenRevealedBefore) {
+        setMessage(null)
+        setMessageRevealLabel('Tap to reveal')
+      } else {
+        fetchMessage()
+      }
     } catch (ex) {
       setMessageValueError((ex as Error).message)
     }
@@ -82,9 +95,15 @@ export const HomePage: FC = () => {
               value={message?.message ?? ''}
               label={message?.author}
               disabled
-              reveal={!!isSapphire}
-              revealLabel={isSapphire ? messageRevealLabel : undefined}
-              onRevealChange={handleRevealChanged}
+              reveal={!!isSapphire && !!message}
+              revealLabel={!!isSapphire && !!message ? undefined : messageRevealLabel}
+              onRevealChange={() => {
+                if (!isInteractingWithChain) {
+                  return handleRevealChanged()
+                }
+
+                return Promise.reject()
+              }}
             />
             {messageError && <p className="error">{StringUtils.truncate(messageError)}</p>}
             <div className={classes.setMessageText}>
@@ -100,7 +119,7 @@ export const HomePage: FC = () => {
             />
             <div className={classes.setMessageActions}>
               <Button disabled={isInteractingWithChain} onClick={handleSetMessage}>
-                {isInteractingWithChain ? 'Please wait...' : 'SetMessage'}
+                {isInteractingWithChain ? 'Please wait...' : 'Set Message'}
               </Button>
             </div>
           </>

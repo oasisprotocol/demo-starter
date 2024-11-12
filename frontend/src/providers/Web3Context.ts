@@ -27,7 +27,7 @@ export interface Web3ProviderContext {
   getGasPrice: () => Promise<bigint>
   isProviderAvailable: () => Promise<boolean>
   getMessage: () => Promise<Message>
-  setMessage: (message: string) => Promise<Message>
+  setMessage: (message: string) => Promise<void>
 }
 
 export const Web3Context = createContext<Web3ProviderContext>({} as Web3ProviderContext)

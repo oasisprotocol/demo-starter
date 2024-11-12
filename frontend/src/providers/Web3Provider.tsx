@@ -6,8 +6,6 @@ import { Web3Context, Web3ProviderContext, Web3ProviderState } from './Web3Conte
 import { useEIP1193 } from '../hooks/useEIP1193'
 import { BrowserProvider, EthersError, JsonRpcProvider } from 'ethers'
 import { MessageBox__factory } from '@oasisprotocol/demo-starter-backend'
-import { retry } from '../utils/promise.utils'
-import { Message } from '../types'
 
 const { VITE_MESSAGE_BOX_ADDR } = import.meta.env
 
@@ -229,24 +227,12 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
     return { message, author }
   }
 
-  const setMessage = async (message: string): Promise<Message> => {
+  const setMessage = async (message: string): Promise<void> => {
     const signer = await _getSigner()
     const messageBox = MessageBox__factory.connect(VITE_MESSAGE_BOX_ADDR, signer)
 
-    await messageBox.setMessage(message)
-
-    await retry<Promise<Message | null>>(getMessage, retrievedMessage => {
-      if (retrievedMessage?.message !== message) {
-        throw new Error('Unable to determine if the new message has been correctly set!')
-      }
-
-      return retrievedMessage
-    })
-
-    return {
-      author: await signer.getAddress(),
-      message,
-    }
+    const { hash } = await messageBox.setMessage(message)
+    await getTransaction(hash)
   }
 
   const providerState: Web3ProviderContext = {
