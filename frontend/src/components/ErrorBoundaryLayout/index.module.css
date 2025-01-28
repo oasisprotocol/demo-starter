@@ -1,0 +1,9 @@
+.errorAlert {
+  margin-top: 10rem;
+}
+
+@media screen and (max-width: 1000px) {
+  .errorAlert {
+    margin-top: 0;
+  }
+}

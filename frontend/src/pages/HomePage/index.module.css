@@ -1,0 +1,20 @@
+.homePage {
+}
+
+.connectWalletText {
+  text-align: center;
+}
+
+.activeMessageText {
+  margin-bottom: 1rem;
+}
+
+.setMessageText {
+  margin: 2rem 0 1rem;
+}
+
+.setMessageActions {
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
+}

@@ -1,56 +1,34 @@
 {
-  "private": true,
   "name": "@oasisprotocol/demo-starter-frontend",
-  "version": "1.0.0",
-  "license": "MIT",
+  "private": true,
+  "version": "0.0.0",
+  "license": "See License in ../LICENSE",
+  "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "run-p type-check build-only",
-    "preview": "vite preview",
-    "build-only": "vite build",
-    "type-check": "vue-tsc --noEmit",
-    "lint:eslint": "eslint . --ext .vue,.ts --ignore-path .gitignore",
-    "lint:prettier": "prettier --check --cache '**/*.{vue,js,ts,json}'",
-    "lint": "npm-run-all lint:**",
-    "format:eslint": "eslint --fix . --ext .vue,.ts --ignore-path .gitignore",
-    "format:prettier": "prettier --write --cache '**/*.{vue,js,ts,json}'",
-    "format": "npm-run-all format:**"
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource-variable/figtree": "^5.1.1",
+    "@fontsource-variable/roboto-mono": "^5.1.0",
+    "@material-design-icons/svg": "^0.14.13",
     "@metamask/detect-provider": "^2.0.0",
     "@metamask/jazzicon": "^2.0.0",
     "@oasisprotocol/demo-starter-backend": "workspace:^",
-    "@oasisprotocol/sapphire-paratime": "^1.3.2",
+    "@oasisprotocol/sapphire-paratime": "1.3.2",
     "ethers": "^6.10.0",
-    "pinia": "^2.0.28",
-    "vue": "^3.2.45",
-    "vue-content-loader": "^2.0.1",
-    "vue-router": "^4.1.6"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-responsive": "^10.0.0",
+    "react-router-dom": "^6.27.0"
   },
   "devDependencies": {
-    "@rushstack/eslint-patch": "^1.2.0",
-    "@types/node": "^18.14.0",
-    "@vitejs/plugin-vue": "^3.2.0",
-    "@vue/eslint-config-prettier": "^7.0.0",
-    "@vue/eslint-config-typescript": "^11.0.2",
-    "@vue/tsconfig": "^0.1.3",
-    "ajv-cli": "^5.0.0",
-    "autoprefixer": "^10.4.13",
-    "browserslist": "^4.21.4",
-    "cssnano": "^5.1.14",
-    "eslint": "^8.29.0",
-    "eslint-plugin-vue": "^9.8.0",
-    "npm-run-all": "^4.1.5",
-    "postcss": "^8.4.21",
-    "postcss-html": "^1.5.0",
-    "prettier": "^2.8.1",
-    "rollup-plugin-visualizer": "^5.8.3",
-    "tailwindcss": "^3.2.4",
-    "typescript": "~4.7.4",
-    "vite": "^3.2.5",
-    "vue-tsc": "^1.0.13"
-  },
-  "browserslist": [
-    "defaults and supports es6-module"
-  ]
+    "@types/react": "^18.3.10",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react-swc": "^3.5.0",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.8",
+    "vite-plugin-svgr": "^4.2.0"
+  }
 }

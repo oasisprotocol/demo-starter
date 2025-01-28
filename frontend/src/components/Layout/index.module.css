@@ -1,0 +1,27 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  vertical-align: middle;
+  align-items: center;
+  padding: 3.125rem 3.125rem 2.5rem;
+}
+
+.headerLink {
+  line-height: 1rem;
+}
+
+.mainSection {
+  display: grid;
+  width: 100%;
+}
+
+@media screen and (max-width: 1000px) {
+  .header {
+    padding: 0;
+    margin-bottom: 2.375rem;
+  }
+
+  .mainSection {
+    display: block;
+  }
+}

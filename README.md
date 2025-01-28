@@ -78,7 +78,7 @@ deploy your dApp.
 You can use one of the deployed test accounts and associated private key with
 MetaMask. If you use the same MetaMask accounts on fresh local networks such as
 Hardhat Node, Foundry Anvil or sapphire-dev docker image, don't forget to
-*clear your account's activity* each time or manually specify the correct
+_clear your account's activity_ each time or manually specify the correct
 account nonce.
 
 ### Frontend Deployment
@@ -109,7 +109,7 @@ Then copy the `dist` folder to a place of your `/my/public/path` location.
 
 ## Troubleshooting
 
-When click button Connect Wallet, in some case you will constantly get the error: 
+When click button Connect Wallet, in some case you will constantly get the error:
 `Uncaught (in promise) Error: [useEthereumStore] Request account failed!`
 
 To resolve it, try to open MetaMask and manually connect site:
