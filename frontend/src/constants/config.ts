@@ -19,6 +19,20 @@ interface AddEthereumChainParameter {
 
 export const CHAINS: Map<bigint, AddEthereumChainParameter> = new Map([
   [
+    23293n,
+    {
+      chainId: '0x5afd',
+      chainName: 'Oasis Sapphire Localnet',
+      nativeCurrency: {
+        name: 'TEST',
+        symbol: 'TEST',
+        decimals: 18,
+      },
+      rpcUrls: ['http://localhost:8545'],
+      blockExplorerUrls: [],
+    },
+  ],
+  [
     23294n,
     {
       chainId: '0x5afe',
@@ -47,6 +61,7 @@ export const CHAINS: Map<bigint, AddEthereumChainParameter> = new Map([
 export const NETWORK_NAMES: Record<string, string> = {
   'Oasis Sapphire': 'Sapphire',
   'Oasis Sapphire Testnet': 'Sapphire Testnet',
+  'Oasis Sapphire Localnet': 'Localnet',
 }
 
 export const VITE_NETWORK = BigInt(import.meta.env.VITE_NETWORK) ?? 0n
