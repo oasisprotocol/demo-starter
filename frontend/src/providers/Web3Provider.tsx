@@ -4,8 +4,10 @@ import { CHAINS, VITE_NETWORK } from '../constants/config'
 import { handleKnownErrors, handleKnownEthersErrors, UnknownNetworkError } from '../utils/errors'
 import { Web3Context, Web3ProviderContext, Web3ProviderState } from './Web3Context'
 import { useEIP1193 } from '../hooks/useEIP1193'
-import { BrowserProvider, EthersError, JsonRpcProvider } from 'ethers'
-import { MessageBox__factory } from '@oasisprotocol/demo-starter-backend'
+import {BrowserProvider, EthersError, JsonRpcProvider, Signature} from 'ethers'
+import {MessageBox, MessageBox__factory} from '@oasisprotocol/demo-starter-backend'
+import {EIP2696_EthereumProvider} from "@oasisprotocol/sapphire-paratime";
+import {SiweMessage} from "siwe";
 
 const { VITE_MESSAGE_BOX_ADDR } = import.meta.env
 
@@ -24,6 +26,7 @@ const web3ProviderInitialState: Web3ProviderState = {
     staticNetwork: true,
   }),
   isSapphire: null,
+  authInfo: null,
 }
 
 export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
@@ -132,7 +135,7 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const _init = async (account: string, provider: typeof window.ethereum) => {
     try {
-      const browserProvider = new BrowserProvider(provider!)
+      const browserProvider = (new BrowserProvider(provider!)) as BrowserProvider & EIP2696_EthereumProvider
 
       const network = await browserProvider.getNetwork()
       const chainId = network.chainId
@@ -207,29 +210,63 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
     return (await browserProvider.getFeeData()).gasPrice ?? 0n
   }
 
-  const _getSigner = async () => {
+  const _getWrappedSigner = async () => {
     const { isSapphire, browserProvider } = state
 
     if (isSapphire) {
-      const signer = await browserProvider!.getSigner()
-      return sapphire.wrap(signer)
+      return sapphire.wrapEthereumProvider(browserProvider?.provider!)
     }
 
     return await browserProvider!.getSigner()
   }
 
-  const getMessage = async () => {
-    const signer = await _getSigner()
-    const messageBox = MessageBox__factory.connect(VITE_MESSAGE_BOX_ADDR, signer)
+  const _getUnwrappedSigner = async () => {
+    const { browserProvider } = state
 
-    const [message, author] = await Promise.all([messageBox.message(), messageBox.author()])
+    return await browserProvider!.getSigner()
+  }
+
+  const _getAuthInfo = async (messageBoxInstance: MessageBox): Promise<string> => {
+    const { authInfo, chainId } = state
+
+    const unwrappedSigner = await _getUnwrappedSigner()
+
+    if (!authInfo) {
+      const domain = await messageBoxInstance.domain()
+      const siweMessage = new SiweMessage({
+        domain,
+        address: await unwrappedSigner.getAddress(),
+        uri: `http://${domain}`,
+        version: '1',
+        chainId: Number(chainId),
+      }).toMessage()
+      const signature = Signature.from(await unwrappedSigner.signMessage(siweMessage))
+      const retrievedAuthInfo = await messageBoxInstance.login(siweMessage, signature)
+
+      setState(prevState => ({
+        ...prevState,
+        authInfo: retrievedAuthInfo,
+      }))
+
+      return retrievedAuthInfo
+    }
+
+    return authInfo
+  }
+
+  const getMessage = async () => {
+    const wrappedSigner = await _getWrappedSigner()
+    const messageBox = MessageBox__factory.connect(VITE_MESSAGE_BOX_ADDR, wrappedSigner)
+
+    const authInfo = await _getAuthInfo(messageBox)
+    const [message, author] = await Promise.all([messageBox.message(authInfo), messageBox.author()])
 
     return { message, author }
   }
 
   const setMessage = async (message: string): Promise<void> => {
-    const signer = await _getSigner()
-    const messageBox = MessageBox__factory.connect(VITE_MESSAGE_BOX_ADDR, signer)
+    const unwrappedSigner = await _getUnwrappedSigner()
+    const messageBox = MessageBox__factory.connect(VITE_MESSAGE_BOX_ADDR, unwrappedSigner)
 
     const { hash } = await messageBox.setMessage(message)
     await getTransaction(hash)
