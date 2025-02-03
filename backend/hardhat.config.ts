@@ -9,6 +9,7 @@ import { JsonRpcProvider } from 'ethers'
 import 'hardhat-watcher'
 import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names'
 import { HardhatUserConfig, task } from 'hardhat/config'
+import { SiweMessage } from 'siwe'
 import 'solidity-coverage'
 
 const TASK_EXPORT_ABIS = 'export-abis'
@@ -37,21 +38,23 @@ task(TASK_EXPORT_ABIS, async (_args, hre) => {
 })
 
 // Unencrypted contract deployment.
-task('deploy').setAction(async (args, hre) => {
-  await hre.run('compile')
+task('deploy')
+  .addPositionalParam('domain', 'dApp domain which Metamask will be allowed for signing-in')
+  .setAction(async (args, hre) => {
+    await hre.run('compile')
 
-  // For deployment unwrap the provider to enable contract verification.
-  const uwProvider = new JsonRpcProvider(hre.network.config.url)
-  const MessageBox = await hre.ethers.getContractFactory(
-    'MessageBox',
-    new hre.ethers.Wallet(accounts[0], uwProvider)
-  )
-  const messageBox = await MessageBox.deploy()
-  await messageBox.waitForDeployment()
+    // For deployment unwrap the provider to enable contract verification.
+    const uwProvider = new JsonRpcProvider(hre.network.config.url)
+    const MessageBox = await hre.ethers.getContractFactory(
+      'MessageBox',
+      new hre.ethers.Wallet(accounts[0], uwProvider)
+    )
+    const messageBox = await MessageBox.deploy(args.domain)
+    await messageBox.waitForDeployment()
 
-  console.log(`MessageBox address: ${await messageBox.getAddress()}`)
-  return messageBox
-})
+    console.log(`MessageBox address: ${await messageBox.getAddress()}`)
+    return messageBox
+  })
 
 // Read message from the MessageBox.
 task('message')
@@ -60,7 +63,19 @@ task('message')
     await hre.run('compile')
 
     const messageBox = await hre.ethers.getContractAt('MessageBox', args.address)
-    const message = await messageBox.message()
+    const domain = await messageBox.domain()
+
+    const acc = new hre.ethers.Wallet(accounts[0], hre.ethers.provider)
+    const siweMsg = new SiweMessage({
+      domain,
+      address: await acc.getAddress(),
+      uri: domain.includes(':') ? domain : `http://${domain}`,
+      version: '1',
+      chainId: Number((await hre.ethers.provider.getNetwork()).chainId),
+    }).toMessage()
+    const sig = hre.ethers.Signature.from(await acc.signMessage(siweMsg))
+    const authToken = await messageBox.login(siweMsg, sig)
+    const message = await messageBox.message(authToken)
     const author = await messageBox.author()
     console.log(`The message is: ${message}, author: ${author}`)
   })
@@ -101,7 +116,7 @@ const config: HardhatUserConfig = {
       accounts,
     },
     'sapphire-testnet': {
-      url: 'https://testnet.sapphire.oasis.dev',
+      url: 'https://testnet.sapphire.oasis.io',
       chainId: 0x5aff,
       accounts,
     },
