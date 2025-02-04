@@ -3,17 +3,53 @@ import { Card } from '../../components/Card'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
 import classes from './index.module.css'
-import { useWeb3 } from '../../hooks/useWeb3'
 import { RevealInput } from '../../components/Input/RevealInput'
 import { Message } from '../../types'
 import { StringUtils } from '../../utils/string.utils'
+import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
+import { WAGMI_CONTRACT_CONFIG, WagmiUseReadContractReturnType } from '../../constants/config'
+import { useWeb3Auth } from '../../hooks/useWeb3Auth'
 
 export const HomePage: FC = () => {
+  const { address } = useAccount()
   const {
-    state: { isConnected, isSapphire, isInteractingWithChain, account },
-    getMessage: web3GetMessage,
-    setMessage: web3SetMessage,
-  } = useWeb3()
+    state: { authInfo },
+    fetchAuthInfo,
+  } = useWeb3Auth()
+
+  const { data: retrievedAuthor, refetch: refetchAuthor } = useReadContract({
+    ...WAGMI_CONTRACT_CONFIG,
+    functionName: 'author',
+    query: {
+      enabled: !!authInfo,
+    },
+  }) satisfies WagmiUseReadContractReturnType<'author', string>
+  const { data: retrievedMessage, refetch: refetchMessage } = useReadContract({
+    ...WAGMI_CONTRACT_CONFIG,
+    functionName: 'message',
+    args: [authInfo],
+    query: {
+      enabled: !!authInfo,
+    },
+  }) satisfies WagmiUseReadContractReturnType<'message', string, [string]>
+
+  const {
+    data: setMessageTxHash,
+    writeContract,
+    isError: isWriteContractError,
+    error: writeContractError,
+  } = useWriteContract()
+  const {
+    isPending: isTransactionReceiptPending,
+    isSuccess: isTransactionReceiptSuccess,
+    isError: isTransactionReceiptError,
+    error: transactionReceiptError,
+  } = useWaitForTransactionReceipt({
+    hash: setMessageTxHash,
+  })
+
+  const isInteractingWithChain = setMessageTxHash && isTransactionReceiptPending
+
   const [message, setMessage] = useState<Message | null>(null)
   const [messageValue, setMessageValue] = useState<string>('')
   const [messageRevealLabel, setMessageRevealLabel] = useState<string>()
@@ -21,13 +57,23 @@ export const HomePage: FC = () => {
   const [messageValueError, setMessageValueError] = useState<string>()
   const [hasBeenRevealedBefore, setHasBeenRevealedBefore] = useState(false)
 
+  useEffect(() => {
+    if (authInfo) {
+      setMessage({
+        message: retrievedMessage!,
+        author: retrievedAuthor!,
+      })
+    }
+  }, [retrievedAuthor, retrievedMessage])
+
   const fetchMessage = async () => {
     setMessageError(null)
     setMessageRevealLabel('Please sign message and wait...')
 
     try {
-      const retrievedMessage = await web3GetMessage()
-      setMessage(retrievedMessage)
+      await fetchAuthInfo()
+      await refetchAuthor()
+      await refetchMessage()
       setMessageRevealLabel(undefined)
       setHasBeenRevealedBefore(true)
 
@@ -41,21 +87,26 @@ export const HomePage: FC = () => {
   }
 
   useEffect(() => {
-    if (isSapphire === null) {
-      return
+    if (isTransactionReceiptSuccess) {
+      setMessageValue('')
+
+      if (!hasBeenRevealedBefore) {
+        setMessage(null)
+        setMessageRevealLabel('Tap to reveal')
+      } else {
+        fetchMessage()
+      }
+    } else if (isTransactionReceiptError || isWriteContractError) {
+      setMessageValueError(transactionReceiptError?.message ?? writeContractError?.message)
+    }
+  }, [isTransactionReceiptSuccess, isTransactionReceiptError, isWriteContractError])
+
+  const handleRevealChanged = async (): Promise<void> => {
+    if (!isInteractingWithChain) {
+      return await fetchMessage()
     }
 
-    if (!isSapphire) {
-      fetchMessage()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSapphire])
-
-  const handleRevealChanged = (): Promise<void> => {
-    if (!isSapphire) {
-      return Promise.resolve(void 0)
-    }
-    return fetchMessage()
+    return Promise.reject()
   }
 
   const handleSetMessage = async () => {
@@ -67,25 +118,17 @@ export const HomePage: FC = () => {
       return
     }
 
-    try {
-      await web3SetMessage(messageValue)
-      setMessageValue('')
-
-      if (!hasBeenRevealedBefore) {
-        setMessage(null)
-        setMessageRevealLabel('Tap to reveal')
-      } else {
-        fetchMessage()
-      }
-    } catch (ex) {
-      setMessageValueError((ex as Error).message)
-    }
+    await writeContract({
+      ...WAGMI_CONTRACT_CONFIG,
+      functionName: 'setMessage',
+      args: [messageValue],
+    })
   }
 
   return (
     <div className={classes.homePage}>
       <Card header={<h2>Demo starter</h2>}>
-        {isConnected && (
+        {address && (
           <>
             <div className={classes.activeMessageText}>
               <h3>Active message</h3>
@@ -95,15 +138,9 @@ export const HomePage: FC = () => {
               value={message?.message ?? ''}
               label={message?.author}
               disabled
-              reveal={!!isSapphire && !!message}
-              revealLabel={!!isSapphire && !!message ? undefined : messageRevealLabel}
-              onRevealChange={() => {
-                if (!isInteractingWithChain) {
-                  return handleRevealChanged()
-                }
-
-                return Promise.reject()
-              }}
+              reveal={!!message}
+              revealLabel={!!message ? undefined : messageRevealLabel}
+              onRevealChange={handleRevealChanged}
             />
             {messageError && <p className="error">{StringUtils.truncate(messageError)}</p>}
             <div className={classes.setMessageText}>
@@ -112,7 +149,7 @@ export const HomePage: FC = () => {
             </div>
             <Input
               value={messageValue}
-              label={account ?? ''}
+              label={address ?? ''}
               onChange={setMessageValue}
               error={messageValueError}
               disabled={isInteractingWithChain}
@@ -124,7 +161,7 @@ export const HomePage: FC = () => {
             </div>
           </>
         )}
-        {!isConnected && (
+        {!address && (
           <>
             <div className={classes.connectWalletText}>
               <p>Please connect your wallet to get started.</p>

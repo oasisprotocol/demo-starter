@@ -1,35 +1,26 @@
-import { FC, useEffect } from 'react'
+import { FC } from 'react'
 import { Outlet } from 'react-router-dom'
 import classes from './index.module.css'
-import { ConnectWallet } from '../ConnectWallet'
 import { Alert } from '../Alert'
 import { useAppState } from '../../hooks/useAppState'
 import { Button } from '../Button'
 import { StringUtils } from '../../utils/string.utils'
 import { LayoutBase } from '../LayoutBase'
 import { LogoIcon } from '../icons/LogoIcon'
-import { useWeb3 } from '../../hooks/useWeb3'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 
 export const Layout: FC = () => {
-  const { connectWallet } = useWeb3()
   const {
-    state: { appError, isMobileScreen },
+    state: { appError },
     clearAppError,
   } = useAppState()
-
-  useEffect(() => {
-    try {
-      connectWallet()
-    } catch (e) {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   return (
     <LayoutBase
       header={
         <header className={classes.header}>
           <LogoIcon />
-          <ConnectWallet inline={isMobileScreen} />
+          <ConnectButton />
         </header>
       }
     >
