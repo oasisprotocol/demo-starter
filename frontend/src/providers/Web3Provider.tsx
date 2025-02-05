@@ -1,14 +1,12 @@
 import { FC, PropsWithChildren, useCallback, useEffect, useState } from 'react'
-import * as sapphire from '@oasisprotocol/sapphire-paratime'
 import { CHAINS, VITE_NETWORK } from '../constants/config'
 import { handleKnownErrors, handleKnownEthersErrors, UnknownNetworkError } from '../utils/errors'
 import { Web3Context, Web3ProviderContext, Web3ProviderState } from './Web3Context'
 import { useEIP1193 } from '../hooks/useEIP1193'
 import { BrowserProvider, EthersError, JsonRpcProvider, Signature } from 'ethers'
 import { MessageBox, MessageBox__factory } from '@oasisprotocol/demo-starter-backend'
-import { EIP2696_EthereumProvider } from '@oasisprotocol/sapphire-paratime'
 import { SiweMessage } from 'siwe'
-import { wrapEthersSigner } from '@oasisprotocol/sapphire-ethers-v6'
+import { wrapEthersSigner, NETWORKS } from '@oasisprotocol/sapphire-ethers-v6'
 
 const { VITE_MESSAGE_BOX_ADDR } = import.meta.env
 
@@ -136,7 +134,7 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const _init = async (account: string, provider: typeof window.ethereum) => {
     try {
-      const browserProvider = new BrowserProvider(provider!) as BrowserProvider & EIP2696_EthereumProvider
+      const browserProvider = new BrowserProvider(provider!)
 
       const network = await browserProvider.getNetwork()
       const chainId = network.chainId
@@ -148,7 +146,7 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
         browserProvider,
         account,
         chainId,
-        isSapphire: !!sapphire.NETWORKS[Number(chainId)],
+        isSapphire: !!NETWORKS[Number(chainId)],
       }))
 
       _addEventListenersOnce(window.ethereum)
@@ -215,7 +213,7 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
     const { isSapphire, browserProvider } = state
 
     if (isSapphire) {
-      const signer = await browserProvider.getSigner()
+      const signer = await browserProvider!.getSigner()
       return wrapEthersSigner(signer)
     }
 

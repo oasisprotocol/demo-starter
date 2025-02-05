@@ -17,7 +17,6 @@
     "@metamask/jazzicon": "^2.0.0",
     "@oasisprotocol/demo-starter-backend": "workspace:^",
     "@oasisprotocol/sapphire-ethers-v6": "^6.0.1",
-    "@oasisprotocol/sapphire-paratime": "2.0.1",
     "ethers": "^6.10.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
