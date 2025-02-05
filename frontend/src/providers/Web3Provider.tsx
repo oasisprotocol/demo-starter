@@ -8,6 +8,7 @@ import { BrowserProvider, EthersError, JsonRpcProvider, Signature } from 'ethers
 import { MessageBox, MessageBox__factory } from '@oasisprotocol/demo-starter-backend'
 import { EIP2696_EthereumProvider } from '@oasisprotocol/sapphire-paratime'
 import { SiweMessage } from 'siwe'
+import { wrapEthersSigner } from '@oasisprotocol/sapphire-ethers-v6'
 
 const { VITE_MESSAGE_BOX_ADDR } = import.meta.env
 
@@ -214,7 +215,8 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
     const { isSapphire, browserProvider } = state
 
     if (isSapphire) {
-      return sapphire.wrapEthereumProvider(browserProvider?.provider!)
+      const signer = await browserProvider.getSigner()
+      return wrapEthersSigner(signer)
     }
 
     return await browserProvider!.getSigner()
@@ -265,8 +267,8 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
   }
 
   const setMessage = async (message: string): Promise<void> => {
-    const unwrappedSigner = await _getUnwrappedSigner()
-    const messageBox = MessageBox__factory.connect(VITE_MESSAGE_BOX_ADDR, unwrappedSigner)
+    const wrappedSigner = await _getWrappedSigner()
+    const messageBox = MessageBox__factory.connect(VITE_MESSAGE_BOX_ADDR, wrappedSigner)
 
     const { hash } = await messageBox.setMessage(message)
     await getTransaction(hash)
