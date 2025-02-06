@@ -1,11 +1,10 @@
 import { createContext } from 'react'
 import { BrowserProvider, JsonRpcProvider, TransactionResponse } from 'ethers'
 import { Message } from '../types'
-import { EIP2696_EthereumProvider } from '@oasisprotocol/sapphire-paratime'
 
 export interface Web3ProviderState {
   isConnected: boolean
-  browserProvider: (BrowserProvider & EIP2696_EthereumProvider) | null
+  browserProvider: BrowserProvider | null
   account: string | null
   explorerBaseUrl: string | null
   chainName: string | null
