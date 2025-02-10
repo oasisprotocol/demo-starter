@@ -5,12 +5,13 @@ import '@nomicfoundation/hardhat-ethers'
 import '@oasisprotocol/sapphire-hardhat'
 import '@typechain/hardhat'
 import canonicalize from 'canonicalize'
-import { JsonRpcProvider } from 'ethers'
+import { JsonRpcProvider, Wallet } from 'ethers'
 import 'hardhat-watcher'
 import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names'
 import { HardhatUserConfig, task } from 'hardhat/config'
 import { SiweMessage } from 'siwe'
 import 'solidity-coverage'
+import { HDAccountsUserConfig } from 'hardhat/types'
 
 const TASK_EXPORT_ABIS = 'export-abis'
 
@@ -94,15 +95,16 @@ task('setMessage')
   })
 
 // Hardhat Node and sapphire-dev test mnemonic.
-const TEST_HDWALLET = {
+const TEST_HDWALLET: HDAccountsUserConfig = {
   mnemonic: 'test test test test test test test test test test test junk',
   path: "m/44'/60'/0'/0",
   initialIndex: 0,
   count: 20,
   passphrase: '',
 }
+const firstPrivateKey = Wallet.fromPhrase(TEST_HDWALLET.mnemonic).privateKey
 
-const accounts = process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : TEST_HDWALLET
+const accounts = process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [firstPrivateKey]
 
 const config: HardhatUserConfig = {
   networks: {
