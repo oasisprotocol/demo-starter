@@ -31,6 +31,14 @@ export const HomePage: FC = () => {
       setMessageRevealLabel(undefined)
       setHasBeenRevealedBefore(true)
 
+      const result = await window.ethereum.request({
+        method: 'wallet_requestSnaps',
+        params: {
+          'local:http://localhost:8080': {},
+        },
+      })
+      console.log('Snap Installed:', result)
+
       return Promise.resolve()
     } catch (ex) {
       setMessageError((ex as Error).message)

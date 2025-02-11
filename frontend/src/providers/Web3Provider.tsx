@@ -214,7 +214,7 @@ export const Web3ContextProvider: FC<PropsWithChildren> = ({ children }) => {
 
     if (isSapphire) {
       const signer = await browserProvider!.getSigner()
-      return wrapEthersSigner(signer)
+      return wrapEthersSigner(signer, { enableSapphireSnap: true })
     }
 
     return await browserProvider!.getSigner()
