@@ -28,8 +28,8 @@ export default defineConfig({
     contextOptions: {
       recordVideo: {
         dir: 'test-results',
-      }
-    }
+      },
+    },
   },
   /* Configure projects for major browsers */
   projects: [
