@@ -21,8 +21,6 @@
     "@oasisprotocol/sapphire-wagmi-v2": "^2.0.0",
     "@rainbow-me/rainbowkit": "^2.2.3",
     "@tanstack/react-query": "5.45.1",
-    "@playwright/test": "^1.47.2",
-    "@tenkeylabs/dappwright": "^2.9.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-responsive": "^10.0.0",
@@ -32,6 +30,9 @@
     "wagmi": "^2.14.11"
   },
   "devDependencies": {
+    "@playwright/test": "^1.47.2",
+    "@tenkeylabs/dappwright": "^2.9.1",
+    "@types/node": "^18.14.0",
     "@types/react": "^18.3.10",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.5.0",

@@ -36,6 +36,7 @@ export const HomePage: FC = () => {
   const {
     data: setMessageTxHash,
     writeContract,
+    isPending: isWriteContractPending,
     isError: isWriteContractError,
     error: writeContractError,
   } = useWriteContract()
@@ -48,7 +49,7 @@ export const HomePage: FC = () => {
     hash: setMessageTxHash,
   })
 
-  const isInteractingWithChain = setMessageTxHash && isTransactionReceiptPending
+  const isInteractingWithChain = isWriteContractPending || (setMessageTxHash && isTransactionReceiptPending)
 
   const [message, setMessage] = useState<Message | null>(null)
   const [messageValue, setMessageValue] = useState<string>('')
