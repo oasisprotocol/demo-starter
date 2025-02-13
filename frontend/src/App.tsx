@@ -83,6 +83,7 @@ export const App: FC = () => {
           <RainbowKitProvider
             theme={rainbowKitTheme}
             avatar={({ size, address }) => <AccountAvatar size={size} address={address} />}
+            modalSize="compact"
           >
             <Web3AuthContextProvider>
               <AppStateContextProvider>
