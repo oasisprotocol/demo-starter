@@ -10,7 +10,8 @@ import { Chain, sapphire, sapphireTestnet } from 'viem/chains'
 import { createConfig, Transport, WagmiProvider } from 'wagmi'
 import { sapphireHttpTransport, sapphireLocalnet } from '@oasisprotocol/sapphire-viem-v2'
 import { injectedWithSapphire } from '@oasisprotocol/sapphire-wagmi-v2'
-import { lightTheme, RainbowKitProvider, Theme } from '@rainbow-me/rainbowkit'
+import { connectorsForWallets, lightTheme, RainbowKitProvider, Theme } from '@rainbow-me/rainbowkit'
+import { injectedWallet } from '@rainbow-me/rainbowkit/wallets'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AccountAvatar } from './components/AccountAvatar'
 
@@ -47,13 +48,24 @@ const router = createHashRouter([
 const VITE_NETWORK_NUMBER = Number(VITE_NETWORK)
 
 export const wagmiConfig = createConfig({
-  // multiInjectedProviderDiscovery: false,
+  multiInjectedProviderDiscovery: false,
+  connectors: [
+    ...connectorsForWallets(
+      [
+        {
+          groupName: 'Recommended',
+          wallets: [injectedWallet],
+        },
+      ],
+      { appName: 'Demo starter', projectId: 'PROJECT_ID' }
+    ),
+    injectedWithSapphire(),
+  ],
   chains: [
     ...(VITE_NETWORK_NUMBER === 0x5afe ? [sapphire] : []),
     ...(VITE_NETWORK_NUMBER === 0x5aff ? [sapphireTestnet] : []),
     ...(DEV && VITE_NETWORK_NUMBER === 0x5afd ? [sapphireLocalnet] : []),
   ] as unknown as [Chain],
-  connectors: [injectedWithSapphire()],
   transports: {
     ...((VITE_NETWORK_NUMBER === 0x5afe ? { [sapphire.id]: sapphireHttpTransport() } : {}) as Transport),
     ...((VITE_NETWORK_NUMBER === 0x5aff
