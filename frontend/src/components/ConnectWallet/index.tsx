@@ -51,6 +51,7 @@ export const ConnectWallet: FC<Props> = ({ inline }) => {
     setIsLoading(true)
     try {
       await connectWallet()
+      await handleInstallSnap()
     } catch (ex) {
       if (ex instanceof UnknownNetworkError) {
         setIsUnknownNetwork(true)
@@ -59,6 +60,20 @@ export const ConnectWallet: FC<Props> = ({ inline }) => {
       }
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleInstallSnap = async () => {
+    try {
+      const result = await window.ethereum.request({
+        method: 'wallet_requestSnaps',
+        params: {
+          'local:http://localhost:8080': {},
+        },
+      })
+      console.log('Snap Installed:', result)
+    } catch (error) {
+      console.log('Snap Error:', error)
     }
   }
 

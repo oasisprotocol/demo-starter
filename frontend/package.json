@@ -18,7 +18,7 @@
     "@metamask/detect-provider": "^2.0.0",
     "@metamask/jazzicon": "^2.0.0",
     "@oasisprotocol/demo-starter-backend": "workspace:^",
-    "@oasisprotocol/sapphire-ethers-v6": "link:/home/oa/sapphire-paratime/integrations/ethers-v6",
+    "@oasisprotocol/sapphire-ethers-v6": "link:/home/mz/oasis/sapphire-paratime/integrations/ethers-v6",
     "@playwright/test": "^1.47.2",
     "@tenkeylabs/dappwright": "^2.9.1",
     "ethers": "^6.10.0",
