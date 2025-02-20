@@ -4,7 +4,7 @@ This is a skeleton for confidential Oasis dApps:
 
 - `backend` contains the example MessageBox Solidity contract and Hardhat utils
   for deploying the contract and managing it via command line.
-- `frontend` contains a Vue-based web application which communicates with your
+- `frontend` contains a React-based web application which communicates with your
   smart contract.
 
 This monorepo is set up for `pnpm`. Install dependencies by running:
