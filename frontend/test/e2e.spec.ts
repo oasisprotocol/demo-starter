@@ -40,7 +40,7 @@ test.beforeEach(async ({ page }) => {
 test('set and view message', async ({ wallet, page }) => {
   // Load page
   await page.getByTestId('rk-connect-button').click()
-  await page.getByTestId('rk-wallet-option-injected').click()
+  await page.getByTestId('rk-wallet-option-injected-sapphire').click()
   await wallet.page.reload()
   await wallet.page.waitForLoadState('domcontentloaded')
   await wallet.page.getByTestId('confirm-btn').click()

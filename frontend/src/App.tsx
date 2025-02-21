@@ -7,8 +7,12 @@ import { AppStateContextProvider } from './providers/AppStateProvider'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { RouterErrorBoundary } from './components/RouterErrorBoundary'
 import { Chain, sapphire, sapphireTestnet } from 'viem/chains'
-import { createConfig, Transport, WagmiProvider } from 'wagmi'
-import { injectedWithSapphire, sapphireHttpTransport, sapphireLocalnet } from '@oasisprotocol/sapphire-wagmi-v2'
+import { createConfig, createConnector, Transport, WagmiProvider } from 'wagmi'
+import {
+  injectedWithSapphire,
+  sapphireHttpTransport,
+  sapphireLocalnet,
+} from '@oasisprotocol/sapphire-wagmi-v2'
 import { connectorsForWallets, lightTheme, RainbowKitProvider, Theme } from '@rainbow-me/rainbowkit'
 import { injectedWallet } from '@rainbow-me/rainbowkit/wallets'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -53,12 +57,22 @@ export const wagmiConfig = createConfig({
       [
         {
           groupName: 'Recommended',
-          wallets: [injectedWallet],
+          wallets: [
+            (wallet => () => ({
+              ...wallet,
+              id: 'injected-sapphire',
+              name: 'Injected (Sapphire)',
+              createConnector: walletDetails =>
+                createConnector(config => ({
+                  ...injectedWithSapphire()(config),
+                  ...walletDetails,
+                })),
+            }))(injectedWallet()),
+          ],
         },
       ],
       { appName: 'Demo starter', projectId: 'PROJECT_ID' }
     ),
-    injectedWithSapphire(),
   ],
   chains: [
     ...(VITE_NETWORK_NUMBER === 0x5afe ? [sapphire] : []),
@@ -71,6 +85,9 @@ export const wagmiConfig = createConfig({
       ? { [sapphireTestnet.id]: sapphireHttpTransport() }
       : {}) as Transport),
     ...(DEV && VITE_NETWORK_NUMBER === 0x5afd ? { [sapphireLocalnet.id]: sapphireHttpTransport() } : {}),
+  },
+  batch: {
+    multicall: false,
   },
 })
 
