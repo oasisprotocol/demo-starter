@@ -51,8 +51,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        working-directory: backend
-        run: pnpm install
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build backend
         working-directory: backend
@@ -63,10 +62,6 @@ jobs:
         id: deploy
         run: |
           echo "message_box_address=$(pnpm hardhat deploy localhost --network sapphire-localnet | grep -o '0x.*')" >> $GITHUB_OUTPUT
-
-      - name: Install dependencies
-        working-directory: frontend
-        run: pnpm install
 
       - name: Build
         working-directory: frontend
