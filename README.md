@@ -94,8 +94,8 @@ to access the wallet. In this case, read the section below on how to properly
 deploy your dApp.
 
 Note: If you use the same MetaMask accounts in your browser and restart the
-sapphire-dev docker image, don't forget to _clear your MetaMask activity_ each
-time to fetch correct account nonce.
+sapphire-localnet docker image, don't forget to _clear your MetaMask activity_
+each time to fetch correct account nonce.
 
 ### Production deployment
 
