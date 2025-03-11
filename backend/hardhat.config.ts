@@ -94,7 +94,7 @@ task('setMessage')
     console.log(`Success! Transaction hash: ${receipt!.hash}`)
   })
 
-// Hardhat Node and sapphire-dev test mnemonic.
+// Hardhat Node and sapphire-localnet test mnemonic.
 const TEST_HDWALLET: HDAccountsUserConfig = {
   mnemonic: 'test test test test test test test test test test test junk',
   path: "m/44'/60'/0'/0",

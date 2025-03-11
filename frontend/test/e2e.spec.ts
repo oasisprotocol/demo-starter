@@ -36,29 +36,22 @@ test.beforeEach(async ({ page }) => {
   await page.goto('http://localhost:5173')
 })
 
-// TODO: improve test without reloading wallet page
 test('set and view message', async ({ wallet, page }) => {
   // Load page
   await page.getByTestId('rk-connect-button').click()
   await page.getByTestId('rk-wallet-option-injected-sapphire').click()
-  await wallet.page.reload()
-  await wallet.page.waitForLoadState('domcontentloaded')
-  await wallet.page.getByTestId('confirm-btn').click()
+  await wallet.approve()
 
   // Set a message
   await page.locator(':text-matches("0x.{40}")').fill('hola amigos')
   const submitBtn = page.getByRole('button', { name: 'Set Message' })
   await submitBtn.click()
-  await wallet.page.reload()
-  await wallet.page.waitForLoadState('domcontentloaded')
-  await wallet.page.getByTestId('confirm-footer-button').click()
+  await wallet.confirmTransaction()
 
   // Reveal the message
   await expect(submitBtn).toBeEnabled()
   await page.locator('[data-label="Tap to reveal"]').click()
-  await wallet.page.reload()
-  await wallet.page.waitForLoadState('domcontentloaded')
-  await wallet.page.getByTestId('confirm-footer-button').click()
+  await wallet.confirmTransaction()
 
   // Assert message has been set
   await expect(page.locator('[data-label="Tap to reveal"]').locator('input')).toHaveValue('hola amigos')
