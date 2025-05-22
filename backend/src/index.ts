@@ -1,3 +1,3 @@
 export {
-    MessageBox, MessageBox__factory,
+    TimeCapsule, TimeCapsule__factory,
 } from "../typechain-types"

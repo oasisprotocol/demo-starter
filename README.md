@@ -1,11 +1,11 @@
-# Oasis Starter dApp
+# Oasis Time Capsule dApp
 
-This is a skeleton for confidential Oasis dApps:
+This is a demonstration dApp for Oasis Sapphire, showcasing confidential time-locked messages:
 
-- `backend` contains the example MessageBox Solidity contract and Hardhat utils
+- `backend` contains the TimeCapsule Solidity contract (an evolution of the original MessageBox) and Hardhat utils
   for deploying the contract and managing it via command line.
 - `frontend` contains a React-based web application which communicates with your
-  smart contract.
+  smart contract, allowing users to set messages that can only be revealed after a specified time.
 
 This monorepo is set up for `pnpm`. Install dependencies by running:
 
@@ -70,7 +70,7 @@ npx hardhat deploy yourdomain.com --network sapphire
 
 ## Frontend
 
-Once the contract is deployed, the MessageBox address will be reported. Store it
+Once the contract is deployed, the TimeCapsule address will be reported. Store it
 inside the `frontend` folder's `.env.development` (for Localnet) or
 `.env.production` (for Testnet or Mainnet - uncomment the appropriate network),
 for example:
@@ -78,6 +78,7 @@ for example:
 ```
 VITE_MESSAGE_BOX_ADDR=0x5FbDB2315678afecb367f032d93F642f64180aa3
 ```
+(Note: The environment variable name `VITE_MESSAGE_BOX_ADDR` is kept from the original template for simplicity, but it now points to the `TimeCapsule` contract.)
 
 ### Run locally
 

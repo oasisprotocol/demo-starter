@@ -46,25 +46,25 @@ task('deploy')
 
     // For deployment unwrap the provider to enable contract verification.
     const uwProvider = new JsonRpcProvider(hre.network.config.url)
-    const MessageBox = await hre.ethers.getContractFactory(
-      'MessageBox',
+    const TimeCapsuleFactory = await hre.ethers.getContractFactory( // Renamed
+      'TimeCapsule', // Renamed
       new hre.ethers.Wallet(accounts[0], uwProvider)
     )
-    const messageBox = await MessageBox.deploy(args.domain)
-    await messageBox.waitForDeployment()
+    const timeCapsule = await TimeCapsuleFactory.deploy(args.domain) // Renamed
+    await timeCapsule.waitForDeployment() // Renamed
 
-    console.log(`MessageBox address: ${await messageBox.getAddress()}`)
-    return messageBox
+    console.log(`TimeCapsule address: ${await timeCapsule.getAddress()}`) // Renamed
+    return timeCapsule // Renamed
   })
 
-// Read message from the MessageBox.
-task('message')
+// Read message from the TimeCapsule.
+task('get-message') // Renamed task
   .addPositionalParam('address', 'contract address')
   .setAction(async (args, hre) => {
     await hre.run('compile')
 
-    const messageBox = await hre.ethers.getContractAt('MessageBox', args.address)
-    const domain = await messageBox.domain()
+    const timeCapsule = await hre.ethers.getContractAt('TimeCapsule', args.address) // Renamed
+    const domain = await timeCapsule.domain() // Renamed
 
     const acc = new hre.ethers.Wallet(accounts[0], hre.ethers.provider)
     const siweMsg = new SiweMessage({
@@ -75,21 +75,28 @@ task('message')
       chainId: Number((await hre.ethers.provider.getNetwork()).chainId),
     }).toMessage()
     const sig = hre.ethers.Signature.from(await acc.signMessage(siweMsg))
-    const authToken = await messageBox.login(siweMsg, sig)
-    const message = await messageBox.message(authToken)
-    const author = await messageBox.author()
-    console.log(`The message is: ${message}, author: ${author}`)
+    const authToken = await timeCapsule.login(siweMsg, sig) // Renamed
+    
+    try {
+      const [messageContent, msgAuthor, msgRevealTimestamp] = await timeCapsule.getMessage(authToken) // Renamed and updated return
+      console.log(`The message is: ${messageContent}, author: ${msgAuthor}, reveals at: ${new Date(Number(msgRevealTimestamp) * 1000)}`)
+    } catch (e: any) {
+      console.error(`Failed to get message: ${e.message}`)
+      const status = await timeCapsule.getCapsuleStatus()
+      console.log(`Capsule status: Author ${status.currentAuthor}, Reveals at ${new Date(Number(status.currentRevealTimestamp) * 1000)}, Ready: ${status.isReadyToReveal}`)
+    }
   })
 
-// Set message.
-task('setMessage')
+// Set message in TimeCapsule.
+task('set-message') // Renamed task
   .addPositionalParam('address', 'contract address')
   .addPositionalParam('message', 'message to set')
+  .addPositionalParam('duration', 'reveal duration in seconds from now')
   .setAction(async (args, hre) => {
     await hre.run('compile')
 
-    let messageBox = await hre.ethers.getContractAt('MessageBox', args.address)
-    const tx = await messageBox.setMessage(args.message)
+    let timeCapsule = await hre.ethers.getContractAt('TimeCapsule', args.address) // Renamed
+    const tx = await timeCapsule.setMessage(args.message, parseInt(args.duration)) // Renamed and added duration
     const receipt = await tx.wait()
     console.log(`Success! Transaction hash: ${receipt!.hash}`)
   })
