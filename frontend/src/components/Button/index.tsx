@@ -16,6 +16,7 @@ interface Props extends PropsWithChildren {
   className?: string
   type?: 'submit' | 'reset' | 'button'
   startSlot?: ReactElement
+  title?: string
 }
 
 const sizeMap: Record<ButtonSize, string> = {
@@ -46,6 +47,7 @@ export const Button: FC<Props> = ({
   onClick,
   type,
   startSlot,
+  title,
 }) => {
   const btnCmp = (
     <button
@@ -61,6 +63,7 @@ export const Button: FC<Props> = ({
       onClick={onClick}
       disabled={disabled}
       type={type}
+      title={title}
     >
       {children}
     </button>

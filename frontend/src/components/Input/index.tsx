@@ -10,9 +10,10 @@ interface Props {
   value?: string
   disabled?: boolean
   onChange?: (value: string) => void
+  type?: string
 }
 
-export const Input: FC<Props> = ({ required, label, error, className, disabled, value, onChange }) => {
+export const Input: FC<Props> = ({ required, label, error, className, disabled, value, onChange, type }) => {
   const id = useId()
 
   return (
@@ -30,6 +31,7 @@ export const Input: FC<Props> = ({ required, label, error, className, disabled, 
           }
           autoComplete="off"
           disabled={disabled}
+          type={type}
           className={StringUtils.clsx(disabled ? classes.inputDisabled : undefined)}
         />
         <label htmlFor={id}>{label}</label>

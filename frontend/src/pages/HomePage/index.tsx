@@ -1,296 +1,465 @@
-import { FC, useEffect, useState } from 'react'
+import { FC, useEffect, useState } from 'react' // Removed useCallback as it's not strictly needed with new flow
 import { Card } from '../../components/Card'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
 import classes from './index.module.css'
-import { RevealInput } from '../../components/Input/RevealInput'
 import { StringUtils } from '../../utils/string.utils'
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { WAGMI_CONTRACT_CONFIG, WagmiUseReadContractReturnType } from '../../constants/config'
 import { useWeb3Auth } from '../../hooks/useWeb3Auth'
-import { zeroAddress, isAddress } from 'viem' // Changed ZeroAddress to zeroAddress
+import { zeroAddress, isAddress } from 'viem'
 import { DateUtils } from '../../utils/date.utils'
 
-interface CapsuleDetails {
-  messageContent: string
+interface CapsuleUIDetails {
   author: string
   revealTimestamp: bigint
   isReadyToReveal: boolean
-  isRevealedSuccessfully: boolean // true if getMessage was successful for the current auth'd user
+  messageContent: string // Empty if not revealed or no capsule
+  isRevealedSuccessfully: boolean // True if getMessage was successful for the current auth'd user
+  hasCapsuleBeenSet: boolean // True if author is not zeroAddress
 }
 
 export const HomePage: FC = () => {
+  console.log('[HomePage] Component rendered');
   const { address } = useAccount()
   const {
     state: { authInfo },
     fetchAuthInfo,
   } = useWeb3Auth()
 
-  // State for capsule details fetched from getCapsuleStatus and getMessage
-  const [capsuleDetails, setCapsuleDetails] = useState<CapsuleDetails | null>(null)
-  // State for new message input
+  const [capsuleUiDetails, setCapsuleUiDetails] = useState<CapsuleUIDetails | null>(null)
   const [newMessage, setNewMessage] = useState<string>('')
-  // State for reveal duration input
-  const [revealDuration, setRevealDuration] = useState<string>('60') // Default to 60 seconds
+  const [revealDuration, setRevealDuration] = useState<string>('300') // Default to 5 minutes (300 seconds)
 
-  const [revealError, setRevealError] = useState<string | null>(null)
-  const [setMessageError, setSetMessageError] = useState<string>()
-  const [isFetchingCapsule, setIsFetchingCapsule] = useState(false)
+  const [uiError, setUiError] = useState<string | null>(null) // For general UI feedback/errors
+  const [setMessageError, setSetMessageError] = useState<string>() // Specific to set message form
 
-  // Read hook for getCapsuleStatus - this is a public view function
+  const [isAttemptingReveal, setIsAttemptingReveal] = useState(false)
+
+  // Log initial states that might be relevant for "stuck at processing"
+  useEffect(() => {
+    console.log('[HomePage] Initial state check (mount):', {
+      address,
+      authInfoAvailable: !!authInfo,
+    });
+  }, []); // Empty dependency array, runs once on mount
+
+
+  // Read hook for getCapsuleStatus
   const {
-    data: capsuleStatus,
+    data: capsuleStatusData,
     refetch: refetchCapsuleStatus,
     isLoading: isLoadingCapsuleStatus,
+    error: capsuleStatusError,
   } = useReadContract({
     ...WAGMI_CONTRACT_CONFIG,
     functionName: 'getCapsuleStatus',
     query: {
       enabled: !!address, // Fetch status if user is connected
+      refetchInterval: 30000, // Poll for status changes (e.g., lock time passing)
     },
   }) satisfies WagmiUseReadContractReturnType<'getCapsuleStatus', [string, bigint, boolean]>
 
-  // Effect to update capsuleDetails when capsuleStatus changes
-  useEffect(() => {
-    if (capsuleStatus) {
-      const [currentAuthor, currentRevealTimestamp, isReadyToReveal] = capsuleStatus
-      setCapsuleDetails(prevDetails => ({
-        messageContent: prevDetails?.isRevealedSuccessfully ? prevDetails.messageContent : '', // Keep message if already revealed
-        author: currentAuthor,
-        revealTimestamp: currentRevealTimestamp,
-        isReadyToReveal: isReadyToReveal && currentAuthor !== zeroAddress, // Also check if author is set
-        isRevealedSuccessfully:
-          (prevDetails?.isRevealedSuccessfully && prevDetails?.author === currentAuthor) || false, // Reset if author changed
-      }))
-      setRevealError(null) // Clear previous reveal errors if status reloads
-    } else if (address) {
-      // If connected but no status, might mean no capsule set
-      setCapsuleDetails(null)
-    }
-  }, [capsuleStatus, address])
 
+  useEffect(() => {
+    console.log('[CapsuleStatus] Hook update:', { isLoadingCapsuleStatus, capsuleStatusData, capsuleStatusError });
+  }, [isLoadingCapsuleStatus, capsuleStatusData, capsuleStatusError]);
+
+  // Effect to update capsuleUiDetails when capsuleStatusData changes
+  useEffect(() => {
+    if (capsuleStatusError) {
+      setUiError(`Error fetching capsule status: ${capsuleStatusError.message}`)
+      setCapsuleUiDetails(null) // Reset on error
+      return
+    }
+
+    if (capsuleStatusData) {
+      const [currentAuthor, currentRevealTimestamp, isReady] = capsuleStatusData
+      const hasCapsule = isAddress(currentAuthor) && currentAuthor !== zeroAddress
+
+      setCapsuleUiDetails((prevDetails: CapsuleUIDetails | null) => {
+        // If author or timestamp changed, it's a new/updated capsule, reset revealed message
+        const isDifferentCapsule =
+          prevDetails?.author !== currentAuthor || prevDetails?.revealTimestamp !== currentRevealTimestamp
+        const messageContent = isDifferentCapsule ? '' : prevDetails?.messageContent || ''
+        const isRevealedSuccessfully = isDifferentCapsule
+          ? false
+          : prevDetails?.isRevealedSuccessfully || false
+
+        return {
+          author: currentAuthor,
+          revealTimestamp: currentRevealTimestamp,
+          isReadyToReveal: isReady && hasCapsule,
+          messageContent,
+          isRevealedSuccessfully,
+          hasCapsuleBeenSet: hasCapsule,
+        }
+      })
+      setUiError(null) // Clear previous errors if status reloads
+    } else if (address && !isLoadingCapsuleStatus) {
+      // Connected, not loading, but no status data -> likely no capsule
+      setCapsuleUiDetails({
+        author: zeroAddress,
+        revealTimestamp: 0n,
+        isReadyToReveal: false,
+        messageContent: '',
+        isRevealedSuccessfully: false,
+        hasCapsuleBeenSet: false,
+      })
+    }
+  }, [capsuleStatusData, capsuleStatusError, address, isLoadingCapsuleStatus])
+
+  // Read hook for getMessage (to reveal)
   const {
-    data: getMessageTxData, // Data here is the result of the call if successful
-    refetch: fetchMessageWithAuth,
+    data: getMessageTxData,
+    refetch: fetchMessageWithAuthToken,
     isFetching: isFetchingMessage,
     error: getMessageError,
   } = useReadContract({
-    // Using useReadContract for authenticated view calls
     ...WAGMI_CONTRACT_CONFIG,
     functionName: 'getMessage',
-    args: [authInfo || '0x'], // Pass auth token, or dummy if not available (query will be disabled)
+    args: [authInfo ?? '0x'] as const, // Pass auth token, or dummy if not available
     query: {
       enabled: false, // Manually trigger via refetch
     },
   }) satisfies WagmiUseReadContractReturnType<'getMessage', [string, string, bigint]>
 
+  useEffect(() => {
+    console.log('[GetMessage] Hook update:', { isFetchingMessage, getMessageTxData, getMessageError, authInfoAvailable: !!authInfo });
+  }, [isFetchingMessage, getMessageTxData, getMessageError, authInfo]);
+
+
+  // Write hook for setMessage
   const {
     data: setMessageTxHash,
-    writeContract,
-    isPending: isWriteContractPending,
-    error: writeContractError,
+    writeContract: executeSetMessage,
+    isPending: isSetMessageWritePending,
+    error: setMessageWriteError,
+    reset: resetSetMessageWrite,
   } = useWriteContract()
 
+  useEffect(() => {
+    console.log('[SetMessageWrite] Hook update:', { setMessageTxHash, isSetMessageWritePending, setMessageWriteError });
+  }, [setMessageTxHash, isSetMessageWritePending, setMessageWriteError]);
+
+
   const {
-    isPending: isTransactionReceiptPending,
-    isSuccess: isTransactionReceiptSuccess,
-    error: transactionReceiptError,
+    isPending: isSetMessageTxReceiptPending,
+    isSuccess: isSetMessageTxReceiptSuccess,
+    error: setMessageTxReceiptError,
   } = useWaitForTransactionReceipt({
     hash: setMessageTxHash,
+    chainId: Number(import.meta.env.VITE_NETWORK),
+    confirmations: 1,
+    query: {
+      enabled: Boolean(setMessageTxHash), // Only start polling once we have a hash
+    },
   })
 
-  const isInteractingWithChain =
-    isWriteContractPending ||
-    (setMessageTxHash && isTransactionReceiptPending) ||
-    isFetchingMessage ||
-    isLoadingCapsuleStatus ||
-    isFetchingCapsule
-
-  // Effect to handle successful message retrieval
   useEffect(() => {
+    console.log('[SetMessageReceipt] Hook update:', {
+      setMessageTxHash, // Log hash again for context
+      isSetMessageTxReceiptPending,
+      isSetMessageTxReceiptSuccess,
+      setMessageTxReceiptError,
+    });
+  }, [setMessageTxHash, isSetMessageTxReceiptPending, isSetMessageTxReceiptSuccess, setMessageTxReceiptError]);
+
+
+  // Combined loading state for disabling UI elements
+  const isLoading =
+    isLoadingCapsuleStatus ||
+    isFetchingMessage ||
+    isSetMessageWritePending ||
+    (Boolean(setMessageTxHash) && isSetMessageTxReceiptPending) || // Only consider receipt pending if hash exists
+    isAttemptingReveal
+
+  useEffect(() => {
+    console.log('[IsLoading] Calculated:', isLoading, {
+      isLoadingCapsuleStatus,
+      isFetchingMessage,
+      isSetMessageWritePending,
+      isSetMessageTxReceiptPending,
+      isAttemptingReveal,
+    });
+  }, [isLoadingCapsuleStatus, isFetchingMessage, isSetMessageWritePending, isSetMessageTxReceiptPending, isAttemptingReveal, isLoading]);
+
+
+  // Effect to handle successful message retrieval from getMessage()
+  useEffect(() => {
+    console.log('[GetMessage] Effect for getMessageTxData/Error triggered:', { getMessageTxData, getMessageError });
     if (getMessageTxData) {
-      const [messageContent, msgAuthor, msgRevealTimestamp] = getMessageTxData
-      setCapsuleDetails(prev => ({
-        ...(prev ?? { author: msgAuthor, revealTimestamp: msgRevealTimestamp, isReadyToReveal: true }), // Should have prev from status
-        messageContent,
-        author: msgAuthor, // Ensure author is updated from the message itself
-        revealTimestamp: msgRevealTimestamp,
-        isRevealedSuccessfully: true,
-      }))
-      setRevealError(null)
+      const [retrievedMessageContent, retrievedAuthor, retrievedRevealTimestamp] = getMessageTxData
+      setCapsuleUiDetails((prev: CapsuleUIDetails | null) => {
+        // Ensure we are updating the correct capsule's revealed state
+        if (prev && prev.author === retrievedAuthor && prev.revealTimestamp === retrievedRevealTimestamp) {
+          return {
+            ...prev,
+            messageContent: retrievedMessageContent,
+            isRevealedSuccessfully: true,
+          }
+        }
+        return prev // Or handle as an unexpected state if author/timestamp mismatch
+      })
+      setUiError(null)
+      setIsAttemptingReveal(false)
+      console.log('[GetMessage] Successfully processed revealed message.');
     }
     if (getMessageError) {
-      setRevealError(getMessageError.message)
+      setUiError(`Reveal failed: ${getMessageError.message}`)
       // Keep existing capsule details but mark as not revealed successfully
-      setCapsuleDetails(prev => (prev ? { ...prev, isRevealedSuccessfully: false } : null))
+      setCapsuleUiDetails((prev: CapsuleUIDetails | null) =>
+        prev ? { ...prev, isRevealedSuccessfully: false, messageContent: '' } : null
+      )
+      setIsAttemptingReveal(false)
+      console.error('[GetMessage] Error revealing message:', getMessageError);
     }
   }, [getMessageTxData, getMessageError])
 
-  // Refetch capsule status after setting a new message
+  // Effect to handle post-setMessage actions
   useEffect(() => {
-    if (isTransactionReceiptSuccess) {
+    console.log('[SetMessage] Effect for post-setMessage actions triggered:', { isSetMessageTxReceiptSuccess, setMessageTxReceiptError, setMessageWriteError });
+    if (isSetMessageTxReceiptSuccess) {
       setNewMessage('')
-      setRevealDuration('60')
+      setRevealDuration('300')
       setSetMessageError(undefined)
+      setUiError('Capsule message set successfully!')
       refetchCapsuleStatus() // Refresh the capsule status
-      // Reset capsule details to reflect it's a new capsule, not yet revealed by current user
-      setCapsuleDetails(prev =>
-        prev ? { ...prev, messageContent: '', isRevealedSuccessfully: false } : null
+      // New capsule is set, so reset revealed state for the new/updated capsule
+      setCapsuleUiDetails((prev: CapsuleUIDetails | null) =>
+        prev
+          ? { ...prev, messageContent: '', isRevealedSuccessfully: false, hasCapsuleBeenSet: true }
+          : {
+              author: address || zeroAddress, // Tentative author, status will update
+              revealTimestamp: 0n, // Tentative, status will update
+              isReadyToReveal: false,
+              messageContent: '',
+              isRevealedSuccessfully: false,
+              hasCapsuleBeenSet: true,
+            }
       )
-    } else if (transactionReceiptError || writeContractError) {
-      setSetMessageError(transactionReceiptError?.message ?? writeContractError?.message)
+      setTimeout(() => setUiError(null), 3000) // Clear success message
+    } else if (setMessageTxReceiptError || setMessageWriteError) {
+      setSetMessageError(
+        `Set message failed: ${
+          (setMessageTxReceiptError || setMessageWriteError)?.message || 'Unknown error'
+        }`
+      )
+      console.error('[SetMessage] Failed to set message:', { setMessageTxReceiptError, setMessageWriteError });
+      resetSetMessageWrite();
     }
-  }, [isTransactionReceiptSuccess, transactionReceiptError, writeContractError, refetchCapsuleStatus])
+  }, [
+    isSetMessageTxReceiptSuccess,
+    setMessageTxReceiptError,
+    setMessageWriteError,
+    refetchCapsuleStatus,
+    address,
+    resetSetMessageWrite,
+  ])
 
-  const handleRevealAttempt = async (): Promise<void> => {
-    if (isInteractingWithChain || !capsuleDetails || !capsuleDetails.isReadyToReveal) {
-      if (capsuleDetails && !capsuleDetails.isReadyToReveal) {
-        setRevealError(
+  // Effect to trigger message fetching when authInfo is ready after initiating reveal
+  useEffect(() => {
+    console.log('[RevealFlow] Effect for authInfo/isAttemptingReveal triggered:', { isAttemptingReveal, authInfoAvailable: !!authInfo, isReady: capsuleUiDetails?.isReadyToReveal });
+    if (isAttemptingReveal && authInfo && capsuleUiDetails?.isReadyToReveal) {
+      const attemptFetch = async () => {
+        console.log('[RevealFlow] Attempting to fetch message with auth token.');
+        try {
+          await fetchMessageWithAuthToken() // This uses the latest authInfo due to args reactivity
+        } catch (e) {
+          console.error('[RevealFlow] Error calling fetchMessageWithAuthToken (should be caught by hook):', e);
+          // Error is handled by the getMessageError useEffect
+          // setIsAttemptingReveal(false) will be handled there too
+        }
+        // No finally here for setIsAttemptingReveal, handled by getMessageError/Data effects
+      }
+      attemptFetch()
+    } else if (isAttemptingReveal && !capsuleUiDetails?.isReadyToReveal) {
+      // Attempting reveal but capsule is not ready (e.g. time lock)
+      console.log('[RevealFlow] Capsule not ready for reveal.');
+      setUiError('Capsule is not ready to be revealed yet.')
+      setIsAttemptingReveal(false)
+    }
+  }, [authInfo, isAttemptingReveal, capsuleUiDetails?.isReadyToReveal, fetchMessageWithAuthToken])
+
+  const handleRevealAttempt = async () => {
+    console.log('[RevealAttempt] Clicked. isLoading:', isLoading, 'isReadyToReveal:', capsuleUiDetails?.isReadyToReveal);
+    if (isLoading || !capsuleUiDetails || !capsuleUiDetails.isReadyToReveal) {
+      if (capsuleUiDetails && !capsuleUiDetails.isReadyToReveal) {
+        setUiError(
           `Capsule is locked. Revealable after ${DateUtils.intlDateFormat(
-            new Date(Number(capsuleDetails.revealTimestamp) * 1000),
+            new Date(Number(capsuleUiDetails.revealTimestamp) * 1000),
             { format: 'long' }
           )}.`
         )
       }
-      return Promise.reject(new Error('Cannot reveal yet or already interacting.'))
+      return
     }
 
-    setRevealError(null)
-    setIsFetchingCapsule(true)
+    setUiError(null)
+    setIsAttemptingReveal(true) // Signal intent, useEffect will handle logic
+    console.log('[RevealAttempt] Set isAttemptingReveal to true.');
 
-    try {
-      if (!authInfo) {
-        await fetchAuthInfo() // This will update authInfo state via Web3AuthProvider
-        // We might need to wait for authInfo to be available
-        // For now, assume fetchAuthInfo updates it and we can proceed or it throws
+    if (!authInfo) {
+      console.log('[RevealAttempt] No authInfo, attempting to fetch.');
+      try {
+        await fetchAuthInfo() // Trigger SIWE authentication
+        console.log('[RevealAttempt] fetchAuthInfo call completed.');
+        // The useEffect for [authInfo, isAttemptingReveal] will pick this up
+      } catch (ex) {
+        const errorMessage = (ex as Error).message;
+        setUiError(`Authentication failed: ${errorMessage}`)
+        setIsAttemptingReveal(false)
+        console.error('[RevealAttempt] Authentication failed:', errorMessage);
       }
-      // fetchAuthInfo might throw, or we might need a useEffect to react to authInfo change
-      // A more robust way: fetchAuthInfo then, if successful, trigger fetchMessageWithAuth
-      // This current implementation relies on authInfo being available after fetchAuthInfo() for the args in useReadContract
-      // This might require a re-render cycle.
-      // For simplicity, let's proceed assuming authInfo will be picked up by the useReadContract.
-      // If authInfo was null, the query for getMessage is disabled. We enable it by refetching.
-      // The `args` for `getMessage` are reactive to `authInfo`.
-      await fetchMessageWithAuth() // This triggers the read, which uses the latest authInfo
-      // Success/error handled by useEffect on getMessageTxData/getMessageError
-      setIsFetchingCapsule(false)
-      return Promise.resolve()
-    } catch (ex) {
-      setRevealError((ex as Error).message)
-      setIsFetchingCapsule(false)
-      throw ex
+    } else {
+      console.log('[RevealAttempt] AuthInfo already present.');
     }
+    // If authInfo is already present, the useEffect will also trigger due to isAttemptingReveal=true
   }
 
   const handleSetMessage = async () => {
+    console.log('[SetMessageAttempt] Clicked. Current message:', newMessage, 'Duration:', revealDuration);
     setSetMessageError(undefined)
+    setUiError(null)
 
-    if (!newMessage) {
-      setSetMessageError('Message is required!')
+    if (!newMessage.trim()) {
+      console.log('[SetMessageAttempt] Validation failed: Message empty.');
+      setSetMessageError('Message content cannot be empty.')
       return
     }
     const durationNum = parseInt(revealDuration, 10)
     if (isNaN(durationNum) || durationNum <= 0) {
-      setSetMessageError('Reveal duration must be a positive number of seconds!')
+      console.log('[SetMessageAttempt] Validation failed: Duration not positive number.');
+      setSetMessageError('Reveal duration must be a positive number of seconds.')
+      return
+    }
+    if (durationNum < 60) {
+      console.log('[SetMessageAttempt] Validation failed: Duration less than 60s.');
+      // Example: Enforce minimum duration
+      setSetMessageError('Minimum reveal duration is 60 seconds.')
       return
     }
 
-    await writeContract({
-      ...WAGMI_CONTRACT_CONFIG,
-      functionName: 'setMessage',
-      args: [newMessage, BigInt(durationNum)],
-    })
+    console.log('[SetMessageAttempt] Calling executeSetMessage...');
+    try {
+      await executeSetMessage({
+        ...WAGMI_CONTRACT_CONFIG,
+        functionName: 'setMessage',
+        args: [newMessage, BigInt(durationNum)],
+      })
+      console.log('[SetMessageAttempt] executeSetMessage call initiated (tx hash will be logged by hook).');
+    } catch (error) {
+      // This catch might not be hit if useWriteContract handles errors internally and updates its `error` state.
+      // Wagmi's `writeContract` itself returns a promise that resolves to the hash or rejects.
+      console.error('[SetMessageAttempt] Error directly from executeSetMessage call:', error);
+      setSetMessageError(`Set message submission failed: ${(error as Error).message}`);
+      // The `useEffect` for `setMessageWriteError` should also catch this.
+    }
   }
 
-  const getRevealInputLabel = () => {
-    if (
-      !address ||
-      !capsuleDetails ||
-      capsuleDetails.author === zeroAddress ||
-      !isAddress(capsuleDetails.author)
+  const renderCurrentCapsule = () => {
+    if (isLoadingCapsuleStatus && !capsuleUiDetails) {
+      return <p className={classes.infoText}>Loading capsule information...</p>
+    }
+
+    if (!capsuleUiDetails || !capsuleUiDetails.hasCapsuleBeenSet) {
+      return <p className={classes.infoText}>No time capsule has been set on this contract yet.</p>
+    }
+
+    const { author, revealTimestamp, isReadyToReveal, messageContent, isRevealedSuccessfully } =
+      capsuleUiDetails
+
+    return (
+      <div className={classes.capsuleDetailsSection}>
+        <p>
+          <strong>Author:</strong> <span className={classes.code}>{StringUtils.truncate(author, 20)}</span>
+        </p>
+        <p>
+          <strong>Reveals At:</strong>{' '}
+          {Number(revealTimestamp) > 0
+            ? DateUtils.intlDateFormat(new Date(Number(revealTimestamp) * 1000), { format: 'long' })
+            : 'N/A'}
+        </p>
+        <p>
+          <strong>Status:</strong>{' '}
+          {isFetchingMessage || isAttemptingReveal
+            ? 'Attempting to reveal...'
+            : isRevealedSuccessfully
+            ? 'Revealed to you'
+            : isReadyToReveal
+            ? 'Ready to Reveal'
+            : 'Locked'}
+        </p>
+
+        {isRevealedSuccessfully ? (
+          <div className={classes.revealedMessageContainer}>
+            <h3>Revealed Message:</h3>
+            <p className={classes.revealedMessageText}>{messageContent}</p>
+          </div>
+        ) : isReadyToReveal ? (
+          <Button
+            className={classes.actionButton}
+            onClick={handleRevealAttempt}
+            disabled={isLoading || address?.toLowerCase() !== author.toLowerCase()}
+            title={address?.toLowerCase() !== author.toLowerCase() ? 'Only the author can reveal' : ''}
+          >
+            {isLoading && (isFetchingMessage || isAttemptingReveal) ? 'Revealing...' : 'Reveal Message'}
+          </Button>
+        ) : (
+          <p className={classes.infoText}>Message is locked until the reveal time.</p>
+        )}
+      </div>
     )
-      return 'No capsule set' // Changed ZeroAddress to zeroAddress
-
-    if (isLoadingCapsuleStatus) return 'Loading capsule status...'
-    if (isFetchingMessage || isFetchingCapsule) return 'Fetching secret...'
-
-    if (!capsuleDetails.isReadyToReveal) {
-      return `Locked. Reveals at: ${DateUtils.intlDateFormat(
-        new Date(Number(capsuleDetails.revealTimestamp) * 1000),
-        { format: 'short' }
-      )}`
-    }
-    if (capsuleDetails.isRevealedSuccessfully) {
-      return `Author: ${StringUtils.truncate(capsuleDetails.author, 10)} | Revealed`
-    }
-    return `Author: ${StringUtils.truncate(capsuleDetails.author, 10)} | Tap to reveal`
   }
 
   return (
     <div className={classes.homePage}>
-      <Card header={<h2>Time Capsule DApp</h2>}>
-        {address && (
+      <Card header={<h2>Oasis Time Capsule</h2>}>
+        {!address ? (
+          <div className={classes.connectWalletText}>
+            <p>Please connect your wallet to interact with the Time Capsule.</p>
+          </div>
+        ) : (
           <>
-            <div className={classes.activeMessageText}>
-              <h3>Current Capsule</h3>
-              {isLoadingCapsuleStatus && !capsuleDetails && <p>Loading capsule information...</p>}
-              {!isLoadingCapsuleStatus &&
-                (!capsuleDetails ||
-                  capsuleDetails.author === zeroAddress ||
-                  !isAddress(capsuleDetails.author)) && <p>No time capsule has been set yet.</p>}{' '}
-              {/* Changed ZeroAddress to zeroAddress */}
+            {uiError && <p className={`error ${classes.uiError}`}>{StringUtils.truncate(uiError, 300)}</p>}
+
+            <div className={classes.section}>
+              <h3>View Current Capsule</h3>
+              {renderCurrentCapsule()}
             </div>
 
-            {capsuleDetails &&
-              capsuleDetails.author !== zeroAddress &&
-              isAddress(capsuleDetails.author) && ( // Changed ZeroAddress to zeroAddress
-                <RevealInput
-                  value={capsuleDetails.isRevealedSuccessfully ? capsuleDetails.messageContent : ''}
-                  label={StringUtils.truncate(capsuleDetails.author, 20)} // Show author from status
-                  disabled={isInteractingWithChain || !capsuleDetails.isReadyToReveal} // Disable if not ready or interacting
-                  reveal={capsuleDetails.isRevealedSuccessfully} // True if message content is loaded
-                  revealLabel={getRevealInputLabel()}
-                  onRevealChange={handleRevealAttempt}
-                />
-              )}
-            {revealError && (
-              <p className="error" style={{ marginTop: '0.5rem' }}>
-                {StringUtils.truncate(revealError)}
+            <hr className={classes.separator} />
+
+            <div className={classes.section}>
+              <h3>Create or Update Capsule</h3>
+              <p className={classes.subtext}>
+                Set a new secret message. This will overwrite any existing capsule on this contract.
               </p>
-            )}
-
-            <div className={classes.setMessageText}>
-              <h3>Set New Capsule Message</h3>
-              <p>Enter your secret message and how long until it can be revealed.</p>
-            </div>
-            <Input
-              value={newMessage}
-              label={`Your Message (as ${StringUtils.truncate(address, 10)})`}
-              onChange={setNewMessage}
-              disabled={isInteractingWithChain}
-            />
-            <Input
-              className={classes.durationInput}
-              value={revealDuration}
-              label="Reveal in (seconds from now)"
-              onChange={setRevealDuration}
-              error={setMessageError} // Display general setMessage errors here
-              disabled={isInteractingWithChain}
-              // type="number" // Consider adding type="number" to Input component if useful
-            />
-            <div className={classes.setMessageActions}>
-              <Button disabled={isInteractingWithChain} onClick={handleSetMessage}>
-                {isInteractingWithChain && !isTransactionReceiptSuccess
-                  ? 'Processing...'
-                  : 'Set Capsule Message'}
-              </Button>
-            </div>
-          </>
-        )}
-        {!address && (
-          <>
-            <div className={classes.connectWalletText}>
-              <p>Please connect your wallet to get started.</p>
+              <Input
+                className={classes.formInput}
+                value={newMessage}
+                label={`Your Secret Message`}
+                onChange={setNewMessage}
+                disabled={isLoading}
+              />
+              <Input
+                className={classes.formInput}
+                value={revealDuration}
+                label="Reveal in (seconds from now, min 60)"
+                onChange={setRevealDuration}
+                disabled={isLoading}
+                type="number" // Consider adding type="number" to Input component if useful
+              />
+              {setMessageError && (
+                <p className={`error ${classes.formError}`}>{StringUtils.truncate(setMessageError)}</p>
+              )}
+              <div className={classes.formActions}>
+                <Button className={classes.actionButton} disabled={isLoading} onClick={handleSetMessage}>
+                  {isSetMessageWritePending || (Boolean(setMessageTxHash) && isSetMessageTxReceiptPending)
+                    ? 'Processing...'
+                    : 'Set/Update Capsule'}
+                </Button>
+              </div>
             </div>
           </>
         )}

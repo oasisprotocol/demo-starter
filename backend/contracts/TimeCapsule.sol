@@ -12,14 +12,18 @@ contract TimeCapsule is SiweAuth {
     // Removed MessageRetrieved event as it was causing issues in a view function.
     // Retrieval can be inferred by a successful call to getMessage by the dApp.
 
+    error CapsuleLocked();
+    error NotAuthor();
+    error RevealDurationMustBePositive();
+
     modifier onlyAuthorAfterReveal(bytes memory authToken) {
         if (block.timestamp < revealTimestamp) {
-            revert("CapsuleLocked"); // Shortened
+            revert CapsuleLocked();
         }
         // Use msg.sender for transactions and signed calls, fallback to
         // checking bearer for view calls.
         if (msg.sender != author && authMsgSender(authToken) != author) {
-            revert("NotAuthor"); // Shortened
+            revert NotAuthor();
         }
         _;
     }
@@ -27,9 +31,12 @@ contract TimeCapsule is SiweAuth {
     constructor(string memory domain) SiweAuth(domain) {}
 
     function setMessage(string calldata m, uint256 _revealDurationInSeconds) external {
-        require(_revealDurationInSeconds > 0, "RevealDurationPositive"); // Shortened
+        if (_revealDurationInSeconds == 0) {
+            // Changed from > 0 to == 0 for direct revert condition
+            revert RevealDurationMustBePositive();
+        }
         uint256 newRevealTimestamp = block.timestamp + _revealDurationInSeconds;
-        
+
         _message = m;
         author = msg.sender;
         revealTimestamp = newRevealTimestamp;
@@ -37,11 +44,17 @@ contract TimeCapsule is SiweAuth {
         emit MessageSet(msg.sender, m, newRevealTimestamp);
     }
 
-    function getMessage(bytes memory authToken)
+    function getMessage(
+        bytes memory authToken
+    )
         external
         view
         onlyAuthorAfterReveal(authToken)
-        returns (string memory messageContent, address messageAuthor, uint256 messageRevealTimestamp)
+        returns (
+            string memory messageContent,
+            address messageAuthor,
+            uint256 messageRevealTimestamp
+        )
     {
         // The onlyAuthorAfterReveal modifier already checks timestamp and authorship.
         // Removed: emit MessageRetrieved(...) as it's a state modification.
@@ -49,7 +62,11 @@ contract TimeCapsule is SiweAuth {
     }
 
     // Public getter for capsule status without needing full auth token for message content.
-    function getCapsuleStatus() external view returns (address currentAuthor, uint256 currentRevealTimestamp, bool isReadyToReveal) {
+    function getCapsuleStatus()
+        external
+        view
+        returns (address currentAuthor, uint256 currentRevealTimestamp, bool isReadyToReveal)
+    {
         return (author, revealTimestamp, block.timestamp >= revealTimestamp);
     }
 }

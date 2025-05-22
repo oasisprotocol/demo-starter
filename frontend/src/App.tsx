@@ -71,7 +71,7 @@ export const wagmiConfig = createConfig({
           ],
         },
       ],
-      { appName: 'Time Capsule DApp', projectId: 'YOUR_RAINBOWKIT_PROJECT_ID' } // Updated appName and projectId placeholder
+      { appName: 'Time Capsule DApp', projectId: 'cc59ac28d998e16b3457dfdc46449fdc' }
     ),
   ],
   chains: [
