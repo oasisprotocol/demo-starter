@@ -40,7 +40,7 @@ task(TASK_EXPORT_ABIS, async (_args, hre) => {
 
 // Unencrypted contract deployment.
 task('deploy')
-  .addPositionalParam('domain', 'dApp domain which Metamask will be allowed for signing-in')
+  .addPositionalParam('domain', 'dApp domain which Metamask will be allowed for signing-in', 'localhost')
   .setAction(async (args, hre) => {
     await hre.run('compile')
 
