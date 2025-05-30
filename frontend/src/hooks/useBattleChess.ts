@@ -32,14 +32,22 @@ export const useBattleChess = (gameId: bigint | undefined) => {
   })
 
   const phase = state ? ((state as any)[0] === 0 ? 'Commit' : 'Reveal') : 'Commit'
+  const turnWhite = state ? (state as any)[1] : true
+  const whiteAddress = state ? (state as any)[2] : null
+  const blackAddress = state ? (state as any)[3] : null
+  
   const isMyTurn = state
-    ? ((state as any)[1] && userAddress === (state as any)[2]) || (!(state as any)[1] && userAddress === (state as any)[3])
+    ? (turnWhite && userAddress === whiteAddress) || (!turnWhite && userAddress === blackAddress)
     : false
+  
+  const playerColor = userAddress === whiteAddress ? 'white' : userAddress === blackAddress ? 'black' : null
 
   return {
     ...read,
     phase,
+    turnWhite,
     isMyTurn,
+    playerColor,
     contractConfig: WAGMI_CONTRACT_CONFIG,
   }
 }
