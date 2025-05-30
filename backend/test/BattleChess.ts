@@ -194,7 +194,9 @@ describe('BattleChess', () => {
     }
 
     // Bob should be able to claim timeout since Alice hasn't revealed
-    await expect(game.connect(bob).claimTimeout(id)).to.not.be.reverted
+    await expect(game.connect(bob).claimTimeout(id))
+      .to.emit(game, 'GameEnded')
+      .withArgs(id, bob.address, 'timeout')
 
     // After timeout claim, the board should have white pieces cleared
     const boardBob = await game.connect(bob).viewBoard(id)
