@@ -7,13 +7,11 @@ import './GamePage.css'
 
 // Import chess piece SVGs
 import whitePawn from '../assets/pieces/white-pawn.svg'
-import whiteKnight from '../assets/pieces/white-knight.svg'
 import whiteBishop from '../assets/pieces/white-bishop.svg'
 import whiteRook from '../assets/pieces/white-rook.svg'
 import whiteQueen from '../assets/pieces/white-queen.svg'
 import whiteKing from '../assets/pieces/white-king.svg'
 import blackPawn from '../assets/pieces/black-pawn.svg'
-import blackKnight from '../assets/pieces/black-knight.svg'
 import blackBishop from '../assets/pieces/black-bishop.svg'
 import blackRook from '../assets/pieces/black-rook.svg'
 import blackQueen from '../assets/pieces/black-queen.svg'
@@ -93,8 +91,9 @@ export default function GamePage() {
     const from = selection
     const to = sq
     const promo = 0
-    // Generate a unique salt using timestamp for simplicity
-    const salt = keccak256(encodePacked(['uint256'], [BigInt(Date.now())])) as Hex
+    // Generate a cryptographically-safe salt
+    const saltBytes = crypto.getRandomValues(new Uint8Array(32))
+    const salt = `0x${Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('')}` as Hex
 
     try {
       setIsProcessingMove(true)
@@ -124,6 +123,7 @@ export default function GamePage() {
       setSelection(null)
       setIsProcessingMove(false)
       setPendingMove(null)
+      setWaitingForReveal(false)
     }
   }
 
@@ -237,20 +237,20 @@ export default function GamePage() {
 function pieceIcon(code: number): string | null {
   const map: { [k: number]: string } = {
     1: whitePawn,
-    2: whiteKnight,
+    2: whiteGhost,
     3: whiteBishop,
     4: whiteRook,
     5: whiteQueen,
     6: whiteKing,
     7: blackPawn,
-    8: blackKnight,
+    8: blackGhost,
     9: blackBishop,
     10: blackRook,
     11: blackQueen,
     12: blackKing,
-    // Ghost pieces for unknown opponent pieces
-    99: whiteGhost, // Unknown white piece
-    100: blackGhost, // Unknown black piece
+    // Ghost pieces for "unknown" enemy pieces returned by contract
+    99: whiteGhost,  // legacy codes kept for safety
+    100: blackGhost,
   }
   return map[code] ?? null
 }

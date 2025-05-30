@@ -36,6 +36,7 @@ contract BattleChess {
     event Joined(uint256 indexed id, address indexed black);
     event Commit(uint256 indexed id, address indexed player, uint256 deadline);
     event Reveal(uint256 indexed id, uint8 toSq);
+    event GameEnded(uint256 indexed id, address indexed winner, string reason);
 
     // ───── game lifecycle ─────────────────────────────────────────────────────
     // Phase logic: Both players commit their first move when creating/joining
@@ -137,6 +138,8 @@ contract BattleChess {
                 g.board[toSq] = moving; // No promotion, just move
             }
         } else {
+            // If the moving piece is not a pawn, promo must be zero
+            require(promo == 0, "promo only for pawns");
             g.board[toSq] = moving;
         }
 
@@ -149,10 +152,19 @@ contract BattleChess {
         
         // Emit only square index; hide what piece landed there.
         emit Reveal(id, toSq);
+        
+        // Check if this is a first-move hash before we clear it
+        bool wasWhiteFirst = (g.pendingHash == g.whiteFirstHash);
+        bool wasBlackFirst = (g.pendingHash == g.blackFirstHash);
+        
         g.turnWhite = !g.turnWhite;
 
+        // First-move hashes are single-use
+        if (wasWhiteFirst) g.whiteFirstHash = bytes32(0);
+        if (wasBlackFirst) g.blackFirstHash = bytes32(0);
+
         // After first two reveals, set up next pending hash
-        if (!g.turnWhite && g.pendingHash == g.whiteFirstHash) {
+        if (!g.turnWhite && wasWhiteFirst) {
             // Just revealed white's first move, now set black's
             g.pendingHash = g.blackFirstHash;
             g.phase = Phase.Reveal; // Black reveals next
@@ -188,6 +200,7 @@ contract BattleChess {
         }
         g.phase = Phase.Commit; // Reset to allow continuing if desired
         g.moveDeadline = 0; // Reset deadline to prevent immediate re-claim
+        emit GameEnded(id, msg.sender, "timeout");
     }
 
     // ───── fog-aware view ------------------------------------------------------
