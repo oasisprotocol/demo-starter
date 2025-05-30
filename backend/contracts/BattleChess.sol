@@ -55,6 +55,9 @@ contract BattleChess {
         g.whiteFirstHash = firstMoveHash;
         g.pendingHash = firstMoveHash; // white will reveal first
         g.randSeed = bytes32(Sapphire.randomBytes(32, abi.encodePacked(id)));
+        // Initialize salts to non-zero to prevent replay false positive on first move
+        g.lastWhiteSalt = bytes32(uint256(1));
+        g.lastBlackSalt = bytes32(uint256(1));
         _setupBoard(g.board);
         emit GameCreated(id, msg.sender);
     }
@@ -184,6 +187,7 @@ contract BattleChess {
             }
         }
         g.phase = Phase.Commit; // Reset to allow continuing if desired
+        g.moveDeadline = 0; // Reset deadline to prevent immediate re-claim
     }
 
     // ───── fog-aware view ------------------------------------------------------

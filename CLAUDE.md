@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 This is an Oasis Sapphire Time Capsule dApp demonstrating confidential time-locked messages. It consists of:
+
 - **Backend**: Solidity smart contract (`TimeCapsule`) with Hardhat tooling
 - **Frontend**: React-based web application using Vite, RainbowKit, and wagmi
 
@@ -64,11 +65,13 @@ pnpm prettier
 ### Smart Contract (`TimeCapsule.sol`)
 
 The contract inherits from `SiweAuth` for authentication and implements:
+
 - `setMessage()`: Store a message with a reveal timestamp
 - `getMessage()`: Retrieve message after reveal time (author only)
 - `getCapsuleStatus()`: Public view of capsule state
 
 Key features:
+
 - Messages are encrypted until reveal time
 - Only the message author can retrieve after unlock
 - Uses SIWE (Sign-In with Ethereum) for authentication
@@ -84,9 +87,11 @@ Key features:
 ### Environment Configuration
 
 Backend deployment requires:
+
 - `PRIVATE_KEY`: Hex-encoded private key for deployment
 
 Frontend requires:
+
 - `VITE_MESSAGE_BOX_ADDR`: Deployed TimeCapsule contract address
 - `VITE_NETWORK`: Network ID (0x5afe for mainnet, 0x5aff for testnet, 0x5afd for localnet)
 

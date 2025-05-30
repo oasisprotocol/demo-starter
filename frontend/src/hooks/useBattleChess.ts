@@ -1,19 +1,19 @@
 import { useState } from 'react'
 import { useReadContract } from 'wagmi'
-import BattleChessAbi from '../../../backend/abis/BattleChess.json'
+import BattleChessJson from '../../../backend/abis/BattleChess.json'
 
 const address = import.meta.env.VITE_GAME_ADDR as `0x${string}`
 
 const WAGMI_CONTRACT_CONFIG = {
   address,
-  abi: BattleChessAbi,
+  abi: (BattleChessJson as any).abi,
 } as const
 
 export type Phase = 'Commit' | 'Reveal'
 
 export const useBattleChess = (gameId: bigint | undefined) => {
   const [phase, setPhase] = useState<Phase>('Commit')
-  
+
   const read = useReadContract({
     ...WAGMI_CONTRACT_CONFIG,
     functionName: 'viewBoard',
@@ -23,11 +23,11 @@ export const useBattleChess = (gameId: bigint | undefined) => {
       refetchInterval: 4_000,
     },
   })
-  
+
   return {
     ...read,
     phase,
     setPhase,
-    contractConfig: WAGMI_CONTRACT_CONFIG
+    contractConfig: WAGMI_CONTRACT_CONFIG,
   }
 }

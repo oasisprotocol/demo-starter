@@ -39,32 +39,31 @@ task(TASK_EXPORT_ABIS, async (_args, hre) => {
 })
 
 // BattleChess deployment with automatic frontend env update
-task('deploy-battlechess')
-  .setAction(async (_, hre) => {
-    await hre.run('compile')
-    
-    const [deployer] = await hre.ethers.getSigners()
-    const battleChess = await (await hre.ethers.deployContract('BattleChess')).waitForDeployment()
-    const address = await battleChess.getAddress()
-    
-    console.log(`BattleChess deployed to: ${address}`)
-    
-    // Update frontend environment file if it exists
-    const envPath = path.join(__dirname, '../../frontend/.env.development')
-    try {
-      await fs.access(envPath) // Check if file exists
-      await fs.writeFile(envPath, `VITE_GAME_ADDR=${address}\nVITE_NETWORK=0x5afd\n`)
-      console.log(`Updated frontend config at ${envPath}`)
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        console.log(`Frontend env file not found at ${envPath}, skipping auto-update`)
-      } else {
-        console.warn(`Could not update frontend config: ${err}`)
-      }
+task('deploy-battlechess').setAction(async (_, hre) => {
+  await hre.run('compile')
+
+  const [deployer] = await hre.ethers.getSigners()
+  const battleChess = await (await hre.ethers.deployContract('BattleChess')).waitForDeployment()
+  const address = await battleChess.getAddress()
+
+  console.log(`BattleChess deployed to: ${address}`)
+
+  // Update frontend environment file if it exists
+  const envPath = path.join(__dirname, '../../frontend/.env.development')
+  try {
+    await fs.access(envPath) // Check if file exists
+    await fs.writeFile(envPath, `VITE_GAME_ADDR=${address}\nVITE_NETWORK=0x5afd\n`)
+    console.log(`Updated frontend config at ${envPath}`)
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      console.log(`Frontend env file not found at ${envPath}, skipping auto-update`)
+    } else {
+      console.warn(`Could not update frontend config: ${err}`)
     }
-    
-    return battleChess
-  })
+  }
+
+  return battleChess
+})
 
 // Create a new chess game
 task('create-game')
