@@ -21,14 +21,13 @@ contract BattleChess {
         bytes32 pendingHash; // hash of *next* move for side-to-move
         bytes32 whiteFirstHash; // white's initial move hash
         bytes32 blackFirstHash; // black's initial move hash
-        bytes32 lastWhiteSalt; // replay-protection for white
-        bytes32 lastBlackSalt; // replay-protection for black
         uint256 moveDeadline; // deadline for current move
         bytes32 randSeed; // TODO: use for fog variation or side randomization
         uint8[64] board; // whole board kept **confidential**
     }
 
     mapping(uint256 => Game) private games;
+    mapping(uint256 => mapping(bytes32 => bool)) private usedHash;
     uint256 public nextId;
 
     // ───── events (tiny, to avoid leaks) ──────────────────────────────────────
@@ -44,7 +43,8 @@ contract BattleChess {
     // if players don't know their first move yet
     function create(bytes32 firstMoveHash, bool wantRandom) external returns (uint256 id) {
         if (wantRandom) {
-            firstMoveHash = keccak256(Sapphire.randomBytes(32, abi.encodePacked(msg.sender, block.number)));
+            bytes32 salt = keccak256(Sapphire.randomBytes(32, abi.encodePacked(msg.sender, block.number)));
+            firstMoveHash = keccak256(abi.encodePacked(uint8(0), uint8(0), uint8(0), salt));
         } else {
             require(firstMoveHash != bytes32(0), "empty hash");
         }
@@ -56,9 +56,7 @@ contract BattleChess {
         g.whiteFirstHash = firstMoveHash;
         g.pendingHash = firstMoveHash; // white will reveal first
         g.randSeed = bytes32(Sapphire.randomBytes(32, abi.encodePacked(id)));
-        // Initialize salts to non-zero to prevent replay false positive on first move
-        g.lastWhiteSalt = bytes32(uint256(1));
-        g.lastBlackSalt = bytes32(uint256(1));
+        usedHash[id][firstMoveHash] = true; // Mark first move hash as used
         _setupBoard(g.board);
         emit GameCreated(id, msg.sender);
     }
@@ -69,13 +67,15 @@ contract BattleChess {
         require(g.black == address(0), "taken");
         require(msg.sender != g.white, "already white");
         if (wantRandom) {
-            firstMoveHash = keccak256(Sapphire.randomBytes(32, abi.encodePacked(msg.sender, block.number)));
+            bytes32 salt = keccak256(Sapphire.randomBytes(32, abi.encodePacked(msg.sender, block.number)));
+            firstMoveHash = keccak256(abi.encodePacked(uint8(0), uint8(0), uint8(0), salt));
         } else {
             require(firstMoveHash != 0, "empty hash");
         }
         g.black = msg.sender;
         g.blackFirstHash = firstMoveHash;
-        g.moveDeadline = block.number + 300;
+        usedHash[id][firstMoveHash] = true; // Mark first move hash as used
+        _startTimer(g);
         // pendingHash remains white's first move hash
         g.phase = Phase.Reveal; // white reveals first
         emit Joined(id, msg.sender);
@@ -87,9 +87,11 @@ contract BattleChess {
         _authTurn(g);
         require(g.phase == Phase.Commit, "bad phase");
         require(moveHash != 0, "empty hash");
+        require(!usedHash[id][moveHash], "hash used");
+        usedHash[id][moveHash] = true;
         g.pendingHash = moveHash;
         g.phase = Phase.Reveal;
-        g.moveDeadline = block.number + 300; // ~1 hour at 12s/block
+        _startTimer(g); // ~1 hour at 12s/block
         emit Commit(id, msg.sender, g.moveDeadline);
     }
 
@@ -103,14 +105,6 @@ contract BattleChess {
 
         bytes32 expected = keccak256(abi.encodePacked(fromSq, toSq, promo, salt));
         require(expected == g.pendingHash, "hash mismatch");
-        // Track salt per player to prevent cross-player replay
-        if (g.turnWhite) {
-            require(salt != g.lastWhiteSalt, "replay");
-            g.lastWhiteSalt = salt;
-        } else {
-            require(salt != g.lastBlackSalt, "replay");
-            g.lastBlackSalt = salt;
-        }
 
         uint8 moving = g.board[fromSq];
         require(moving != 0, "empty");
@@ -122,34 +116,33 @@ contract BattleChess {
         g.board[fromSq] = 0;
         
         // Handle pawn promotion
-        if ((moving == 1 || moving == 7) && promo != 0) {
+        if (moving == 1 || moving == 7) {
             // Check if pawn reaches the opposite end
             uint8 row = toSq / 8;
             if ((moving == 1 && row == 7) || (moving == 7 && row == 0)) {
-                // Validate promotion piece
+                // Pawn reached promotion rank
                 if (moving == 1) {
-                    require(promo >= 2 && promo <= 5, "invalid white promo");
+                    // White pawn
+                    if (promo == 0) promo = 5; // Default to queen
+                    require(promo >= 2 && promo <= 5, "bad promo");
                     g.board[toSq] = promo;
                 } else {
-                    require(promo >= 8 && promo <= 11, "invalid black promo");
+                    // Black pawn
+                    if (promo == 0) promo = 11; // Default to queen
+                    require(promo >= 8 && promo <= 11, "bad promo");
                     g.board[toSq] = promo;
                 }
             } else {
-                g.board[toSq] = moving; // No promotion, just move
+                // Pawn not promoting
+                require(promo == 0, "no promo yet");
+                g.board[toSq] = moving;
             }
         } else {
-            // If the moving piece is not a pawn, promo must be zero
+            // Not a pawn
             require(promo == 0, "promo only for pawns");
             g.board[toSq] = moving;
         }
 
-        // Clear opponent's salt to prevent collisions
-        if (g.turnWhite) {
-            g.lastBlackSalt = bytes32(0);
-        } else {
-            g.lastWhiteSalt = bytes32(0);
-        }
-        
         // Emit only square index; hide what piece landed there.
         emit Reveal(id, toSq);
         
@@ -168,17 +161,17 @@ contract BattleChess {
             // Just revealed white's first move, now set black's
             g.pendingHash = g.blackFirstHash;
             g.phase = Phase.Reveal; // Black reveals next
-            g.moveDeadline = block.number + 300;
+            _startTimer(g);
         } else {
             g.phase = Phase.Commit; // Normal flow
-            g.moveDeadline = block.number + 300; // Set deadline for next move
+            _startTimer(g); // Set deadline for next move
         }
     }
 
     // ───── timeout claim -------------------------------------------------------
     function claimTimeout(uint256 id) external {
         Game storage g = games[id];
-        require(g.phase == Phase.Reveal, "not in reveal phase");
+        require(g.phase == Phase.Reveal || g.phase == Phase.Commit, "bad phase");
         require(block.number > g.moveDeadline && g.moveDeadline != 0, "deadline not passed");
         require(
             (g.turnWhite && msg.sender == g.black) || (!g.turnWhite && msg.sender == g.white),
@@ -328,5 +321,9 @@ contract BattleChess {
 
     function isWhite(uint8 p) private pure returns (bool) {
         return p >= 1 && p <= 6;
+    }
+
+    function _startTimer(Game storage g) private {
+        g.moveDeadline = block.number + 300;
     }
 }
