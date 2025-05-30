@@ -34,7 +34,7 @@ invoking:
 
 ```shell
 export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-npx hardhat deploy localhost --network sapphire-localnet
+npx hardhat deploy --network sapphire-localnet
 ```
 
 Similarly, you can run tests on Localnet:
