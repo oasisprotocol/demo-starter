@@ -36,7 +36,7 @@ export default function GamePage() {
   const [waitingForReveal, setWaitingForReveal] = useState(false)
 
   /* read "my" board with phase management */
-  const { data: board, phase, setPhase, contractConfig } = useBattleChess(gameId)
+  const { data: board, isMyTurn, contractConfig } = useBattleChess(gameId)
 
   /* writer for commit / reveal */
   const { writeContractAsync } = useWriteContract()
@@ -48,13 +48,15 @@ export default function GamePage() {
     return await publicClient.waitForTransactionReceipt({ hash })
   }
 
+  const PLACEHOLDER_HASH = keccak256(encodePacked(['string'], ['placeholder'])) as Hex
+
   /* create game */
   const createGame = async () => {
     try {
       const hash = await writeContractAsync({
         ...contractConfig,
         functionName: 'create',
-        args: ['0x0000000000000000000000000000000000000000000000000000000000000000' as Hex, true],
+        args: [PLACEHOLDER_HASH, false],
       })
       const receipt = await waitForTx(hash)
       // First topic = GameCreated(id,…)
@@ -72,7 +74,7 @@ export default function GamePage() {
       await writeContractAsync({
         ...contractConfig,
         functionName: 'join',
-        args: [id, '0x0000000000000000000000000000000000000000000000000000000000000000' as Hex, true],
+        args: [id, PLACEHOLDER_HASH, false],
       })
       setGameId(id)
     } catch (error) {
@@ -93,8 +95,7 @@ export default function GamePage() {
     const from = selection
     const to = sq
     const promo = 0
-    // Generate a unique salt using timestamp for simplicity
-    const salt = keccak256(encodePacked(['uint256'], [BigInt(Date.now())])) as Hex
+    const salt = `0x${Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('hex')}` as Hex
 
     try {
       setIsProcessingMove(true)
@@ -147,7 +148,6 @@ export default function GamePage() {
       // Reset state
       setPendingMove(null)
       setWaitingForReveal(false)
-      setPhase('Commit')
       setIsProcessingMove(false)
     } catch (error) {
       console.error('Reveal failed:', error)
@@ -190,7 +190,7 @@ export default function GamePage() {
       <div className="turn-banner">
         {waitingForReveal ? (
           <span className="your-turn">Click "Reveal Move" to complete your turn</span>
-        ) : phase === 'Commit' ? (
+        ) : isMyTurn ? (
           <span className="your-turn">Your turn - Select a piece to move</span>
         ) : (
           <span className="waiting">Waiting for opponent...</span>
