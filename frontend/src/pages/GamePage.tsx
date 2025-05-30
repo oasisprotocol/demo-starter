@@ -3,6 +3,7 @@ import { useAccount, useWriteContract, usePublicClient, useChainId, useSwitchCha
 import { keccak256, encodePacked, type Hex } from 'viem'
 import { useBattleChess } from '../hooks/useBattleChess'
 import { useAppState } from '../hooks/useAppState'
+import PromotionModal from '../components/PromotionModal'
 import './GamePage.css'
 
 // Import chess piece SVGs
@@ -32,11 +33,12 @@ export default function GamePage() {
   const [gameId, setGameId] = useState<bigint | undefined>(undefined)
   const [selection, setSelection] = useState<number | null>(null)
   const [isProcessingMove, setIsProcessingMove] = useState(false)
-  const [pendingMove, setPendingMove] = useState<{ from: number; to: number; salt: Hex } | null>(null)
-  const [waitingForReveal, setWaitingForReveal] = useState(false)
+  const [pendingMove, setPendingMove] = useState<{ from: number; to: number; salt: Hex; promo: number } | null>(null)
+  const [promotionMove, setPromotionMove] = useState<{ from: number; to: number } | null>(null)
 
   /* read "my" board with phase management */
-  const { data: board, isMyTurn, contractConfig } = useBattleChess(gameId)
+  const { data: board, isMyTurn, phase, contractConfig } = useBattleChess(gameId)
+  const boardData = board as Board | undefined
 
   /* writer for commit / reveal */
   const { writeContractAsync } = useWriteContract()
@@ -85,7 +87,7 @@ export default function GamePage() {
 
   /* click handler */
   const clickSq = async (sq: number) => {
-    if (!isConnected || gameId === undefined || isProcessingMove || waitingForReveal) return
+    if (!isConnected || gameId === undefined || isProcessingMove || !isMyTurn || phase !== 'Commit') return
 
     if (selection === null) {
       setSelection(sq)
@@ -94,6 +96,20 @@ export default function GamePage() {
 
     const from = selection
     const to = sq
+    
+    // Check if this is a pawn promotion
+    const piece = boardData?.[from]
+    const toPiece = Number(piece || 0)
+    const row = Math.floor(to / 8)
+    
+    if ((toPiece === 1 && row === 7) || (toPiece === 7 && row === 0)) {
+      // Pawn reaching promotion rank - show modal
+      setPromotionMove({ from, to })
+      setSelection(null)
+      return
+    }
+    
+    // Regular move
     const promo = 0
     // Generate a cryptographically-safe salt
     const saltBytes = crypto.getRandomValues(new Uint8Array(32))
@@ -104,7 +120,7 @@ export default function GamePage() {
       console.log('Committing move...')
 
       // Store move details for reveal
-      setPendingMove({ from, to, salt })
+      setPendingMove({ from, to, salt, promo })
 
       // Commit phase only
       const hash = keccak256(encodePacked(['uint8', 'uint8', 'uint8', 'bytes32'], [from, to, promo, salt]))
@@ -117,17 +133,56 @@ export default function GamePage() {
       // Wait for commit to be mined
       await waitForTx(commitTx)
 
-      // Reset selection and set waiting state
+      // Reset selection
       setSelection(null)
       setIsProcessingMove(false)
-      setWaitingForReveal(true)
     } catch (error) {
       console.error('Commit failed:', error)
       setAppError(error instanceof Error ? error.message : 'Failed to commit move')
       setSelection(null)
       setIsProcessingMove(false)
       setPendingMove(null)
-      setWaitingForReveal(false)
+    }
+  }
+
+  /* handle promotion selection */
+  const handlePromotion = async (promoCode: number) => {
+    if (!promotionMove || !gameId) return
+
+    const { from, to } = promotionMove
+    const promo = promoCode
+
+    // Generate a cryptographically-safe salt
+    const saltBytes = crypto.getRandomValues(new Uint8Array(32))
+    const salt = `0x${Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('')}` as Hex
+
+    try {
+      setIsProcessingMove(true)
+      console.log('Committing promotion move...')
+
+      // Store move details for reveal
+      setPendingMove({ from, to, salt, promo })
+
+      // Commit phase only
+      const hash = keccak256(encodePacked(['uint8', 'uint8', 'uint8', 'bytes32'], [from, to, promo, salt]))
+      const commitTx = await writeContractAsync({
+        ...contractConfig,
+        functionName: 'commit',
+        args: [gameId, hash],
+      })
+
+      // Wait for commit to be mined
+      await waitForTx(commitTx)
+
+      // Reset selection
+      setPromotionMove(null)
+      setIsProcessingMove(false)
+    } catch (error) {
+      console.error('Commit failed:', error)
+      setAppError(error instanceof Error ? error.message : 'Failed to commit move')
+      setPromotionMove(null)
+      setIsProcessingMove(false)
+      setPendingMove(null)
     }
   }
 
@@ -142,7 +197,7 @@ export default function GamePage() {
       const revealTx = await writeContractAsync({
         ...contractConfig,
         functionName: 'reveal',
-        args: [gameId, pendingMove.from, pendingMove.to, 0, pendingMove.salt],
+        args: [gameId, pendingMove.from, pendingMove.to, pendingMove.promo, pendingMove.salt],
       })
 
       // Wait for reveal to be mined
@@ -150,12 +205,12 @@ export default function GamePage() {
 
       // Reset state
       setPendingMove(null)
-      setWaitingForReveal(false)
       setIsProcessingMove(false)
     } catch (error) {
       console.error('Reveal failed:', error)
       setAppError(error instanceof Error ? error.message : 'Failed to reveal move')
       setIsProcessingMove(false)
+      // Don't clear pendingMove on error - allow retry
     }
   }
 
@@ -186,14 +241,12 @@ export default function GamePage() {
     )
   }
 
-  const boardData = board as Board | undefined
-
   return (
     <div>
       <div className="turn-banner">
-        {waitingForReveal ? (
+        {phase === 'Reveal' && isMyTurn && pendingMove ? (
           <span className="your-turn">Click "Reveal Move" to complete your turn</span>
-        ) : isMyTurn ? (
+        ) : phase === 'Commit' && isMyTurn ? (
           <span className="your-turn">Your turn - Select a piece to move</span>
         ) : (
           <span className="waiting">Waiting for opponent...</span>
@@ -201,7 +254,7 @@ export default function GamePage() {
       </div>
       {isProcessingMove && <div className="status">Processing move...</div>}
       <div
-        className={`board ${isProcessingMove || waitingForReveal ? 'waiting' : ''}`}
+        className={`board ${isProcessingMove || (phase === 'Reveal' && isMyTurn) ? 'waiting' : ''}`}
         role="grid"
         aria-label="Chess board"
       >
@@ -226,12 +279,19 @@ export default function GamePage() {
           )
         })}
       </div>
-      {waitingForReveal && (
+      {phase === 'Reveal' && isMyTurn && pendingMove && (
         <div className="reveal-section">
           <button onClick={revealMove} disabled={isProcessingMove}>
             Reveal Move
           </button>
         </div>
+      )}
+      {promotionMove && (
+        <PromotionModal
+          isWhite={boardData?.[promotionMove.from] === 1}
+          onSelect={handlePromotion}
+          onCancel={() => setPromotionMove(null)}
+        />
       )}
     </div>
   )
