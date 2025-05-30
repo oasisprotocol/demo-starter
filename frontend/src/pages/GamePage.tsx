@@ -33,7 +33,7 @@ export default function GamePage() {
   const [gameId, setGameId] = useState<bigint | undefined>(undefined)
   const [selection, setSelection] = useState<number | null>(null)
   const [isProcessingMove, setIsProcessingMove] = useState(false)
-  const [pendingMove, setPendingMove] = useState<{ from: number; to: number; salt: Hex; promo?: number } | null>(null)
+  const [pendingMove, setPendingMove] = useState<{ from: number; to: number; salt: Hex; promo: number } | null>(null)
   const [waitingForReveal, setWaitingForReveal] = useState(false)
   const [showPromotion, setShowPromotion] = useState(false)
   const [promotionMove, setPromotionMove] = useState<{ from: number; to: number } | null>(null)
@@ -141,6 +141,7 @@ export default function GamePage() {
 
       // Store move details for reveal
       setPendingMove({ from, to, salt, promo })
+      setWaitingForReveal(true)
 
       // Commit phase only
       const hash = keccak256(encodePacked(['uint8', 'uint8', 'uint8', 'bytes32'], [from, to, promo, salt]))
@@ -153,10 +154,9 @@ export default function GamePage() {
       // Wait for commit to be mined
       await waitForTx(commitTx)
 
-      // Reset selection and set waiting state
+      // Reset selection
       setSelection(null)
       setIsProcessingMove(false)
-      setWaitingForReveal(true)
     } catch (error) {
       console.error('Commit failed:', error)
       setAppError(error instanceof Error ? error.message : 'Failed to commit move')
@@ -190,7 +190,7 @@ export default function GamePage() {
       const revealTx = await writeContractAsync({
         ...contractConfig,
         functionName: 'reveal',
-        args: [gameId, pendingMove.from, pendingMove.to, pendingMove.promo || 0, pendingMove.salt],
+        args: [gameId, pendingMove.from, pendingMove.to, pendingMove.promo, pendingMove.salt],
       })
 
       // Wait for reveal to be mined
@@ -204,6 +204,7 @@ export default function GamePage() {
       console.error('Reveal failed:', error)
       setAppError(error instanceof Error ? error.message : 'Failed to reveal move')
       setIsProcessingMove(false)
+      // Don't clear pendingMove on error - allow retry
     }
   }
 
@@ -284,7 +285,7 @@ export default function GamePage() {
       <div className="turn-banner">
         {showRevealButton ? (
           <span className="your-turn">Click "Reveal Move" to complete your turn</span>
-        ) : isMyTurn ? (
+        ) : phase === 'Commit' && isMyTurn ? (
           <span className="your-turn">Your turn - Select a piece to move</span>
         ) : (
           <span className="waiting">Waiting for opponent...</span>
@@ -292,7 +293,7 @@ export default function GamePage() {
       </div>
       {isProcessingMove && <div className="status">Processing move...</div>}
       <div
-        className={`board ${isProcessingMove || waitingForReveal ? 'waiting' : ''}`}
+        className={`board ${isProcessingMove || (phase === 'Reveal' && isMyTurn) ? 'waiting' : ''}`}
         role="grid"
         aria-label="Chess board"
       >

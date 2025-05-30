@@ -1,6 +1,16 @@
 import React from 'react';
 import styles from './index.module.css';
 
+// Import piece SVGs
+import whiteKnight from '../../assets/pieces/white-knight.svg'
+import whiteBishop from '../../assets/pieces/white-bishop.svg'
+import whiteRook from '../../assets/pieces/white-rook.svg'
+import whiteQueen from '../../assets/pieces/white-queen.svg'
+import blackKnight from '../../assets/pieces/black-knight.svg'
+import blackBishop from '../../assets/pieces/black-bishop.svg'
+import blackRook from '../../assets/pieces/black-rook.svg'
+import blackQueen from '../../assets/pieces/black-queen.svg'
+
 interface PromotionModalProps {
   isWhite: boolean;
   onSelect: (piece: number) => void;
@@ -8,12 +18,19 @@ interface PromotionModalProps {
 }
 
 export const PromotionModal: React.FC<PromotionModalProps> = ({ isWhite, onSelect, onCancel }) => {
-  const pieces = [
-    { type: 'queen', value: isWhite ? 5 : 11, icon: isWhite ? '/src/assets/pieces/white-queen.svg' : '/src/assets/pieces/black-queen.svg' },
-    { type: 'rook', value: isWhite ? 4 : 10, icon: isWhite ? '/src/assets/pieces/white-rook.svg' : '/src/assets/pieces/black-rook.svg' },
-    { type: 'bishop', value: isWhite ? 3 : 9, icon: isWhite ? '/src/assets/pieces/white-bishop.svg' : '/src/assets/pieces/black-bishop.svg' },
-    { type: 'knight', value: isWhite ? 2 : 8, icon: isWhite ? '/src/assets/pieces/white-knight.svg' : '/src/assets/pieces/black-knight.svg' },
-  ];
+  const pieces = isWhite
+    ? [
+        { code: 5, icon: whiteQueen, name: 'Queen' },
+        { code: 4, icon: whiteRook, name: 'Rook' },
+        { code: 3, icon: whiteBishop, name: 'Bishop' },
+        { code: 2, icon: whiteKnight, name: 'Knight' },
+      ]
+    : [
+        { code: 11, icon: blackQueen, name: 'Queen' },
+        { code: 10, icon: blackRook, name: 'Rook' },
+        { code: 9, icon: blackBishop, name: 'Bishop' },
+        { code: 8, icon: blackKnight, name: 'Knight' },
+      ]
 
   return (
     <div className={styles.overlay} onClick={onCancel}>
@@ -22,15 +39,18 @@ export const PromotionModal: React.FC<PromotionModalProps> = ({ isWhite, onSelec
         <div className={styles.pieces}>
           {pieces.map((piece) => (
             <button
-              key={piece.type}
+              key={piece.code}
               className={styles.pieceButton}
-              onClick={() => onSelect(piece.value)}
-              aria-label={`Promote to ${piece.type}`}
+              onClick={() => onSelect(piece.code)}
+              aria-label={`Promote to ${piece.name}`}
             >
-              <img src={piece.icon} alt={piece.type} className={styles.pieceIcon} />
+              <img src={piece.icon} alt={piece.name} className={styles.pieceIcon} />
             </button>
           ))}
         </div>
+        <button className={styles.cancelButton} onClick={onCancel}>
+          Cancel
+        </button>
       </div>
     </div>
   );

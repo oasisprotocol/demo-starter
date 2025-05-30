@@ -29,10 +29,8 @@ contract BattleChess {
     }
 
     mapping(uint256 => Game) private games;
-    uint256 public nextId;
-    
-    // Hash-reuse prevention: tracks all used move hashes per game
     mapping(uint256 => mapping(bytes32 => bool)) private usedHash;
+    uint256 public nextId;
 
     // ───── events (tiny, to avoid leaks) ──────────────────────────────────────
     event GameCreated(uint256 indexed id, address indexed white);
@@ -81,9 +79,9 @@ contract BattleChess {
         }
         g.black = msg.sender;
         g.blackFirstHash = firstMoveHash;
-        g.moveDeadline = block.number + 300;
         // Mark black's first hash as used
         usedHash[id][firstMoveHash] = true;
+        _startTimer(g);
         // pendingHash remains white's first move hash
         g.phase = Phase.Reveal; // white reveals first
         emit Joined(id, msg.sender);
@@ -95,9 +93,11 @@ contract BattleChess {
         _authTurn(g);
         require(g.phase == Phase.Commit, "bad phase");
         require(moveHash != 0, "empty hash");
+        require(!usedHash[id][moveHash], "hash used");
+        usedHash[id][moveHash] = true;
         g.pendingHash = moveHash;
         g.phase = Phase.Reveal;
-        g.moveDeadline = block.number + 300; // ~1 hour at 12s/block
+        _startTimer(g); // ~1 hour at 12s/block
         emit Commit(id, msg.sender, g.moveDeadline);
     }
 
@@ -111,10 +111,6 @@ contract BattleChess {
 
         bytes32 expected = keccak256(abi.encodePacked(fromSq, toSq, promo, salt));
         require(expected == g.pendingHash, "hash mismatch");
-        
-        // Prevent hash reuse across any turn
-        require(!usedHash[id][expected], "hash already used");
-        usedHash[id][expected] = true;
 
         uint8 moving = g.board[fromSq];
         require(moving != 0, "empty");
@@ -130,16 +126,16 @@ contract BattleChess {
             // Check if pawn reaches the opposite end
             uint8 row = toSq / 8;
             if ((moving == 1 && row == 7) || (moving == 7 && row == 0)) {
-                // Default to queen if no promotion specified
-                if (promo == 0) {
-                    promo = moving == 1 ? 5 : 11; // Default to queen
-                }
-                // Validate promotion piece
+                // Pawn reached promotion rank
                 if (moving == 1) {
-                    require(promo >= 2 && promo <= 5, "invalid white promo");
+                    // White pawn
+                    if (promo == 0) promo = 5; // Default to queen
+                    require(promo >= 2 && promo <= 5, "bad promo");
                     g.board[toSq] = promo;
                 } else {
-                    require(promo >= 8 && promo <= 11, "invalid black promo");
+                    // Black pawn
+                    if (promo == 0) promo = 11; // Default to queen
+                    require(promo >= 8 && promo <= 11, "bad promo");
                     g.board[toSq] = promo;
                 }
             } else {
@@ -148,7 +144,7 @@ contract BattleChess {
                 g.board[toSq] = moving;
             }
         } else {
-            // If the moving piece is not a pawn, promo must be zero
+            // Not a pawn
             require(promo == 0, "promo only for pawns");
             g.board[toSq] = moving;
         }
@@ -171,10 +167,10 @@ contract BattleChess {
             // Just revealed white's first move, now set black's
             g.pendingHash = g.blackFirstHash;
             g.phase = Phase.Reveal; // Black reveals next
-            g.moveDeadline = block.number + 300;
+            _startTimer(g);
         } else {
             g.phase = Phase.Commit; // Normal flow
-            g.moveDeadline = block.number + 300; // Set deadline for next move
+            _startTimer(g); // Set deadline for next move
         }
     }
 
@@ -333,5 +329,9 @@ contract BattleChess {
             }
             unchecked { ++i; }
         }
+    }
+
+    function _startTimer(Game storage g) private {
+        g.moveDeadline = block.number + 300;
     }
 }
