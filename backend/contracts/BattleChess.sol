@@ -312,9 +312,18 @@ contract BattleChess {
         int16 t = int16(int8(s)) + int16(d);
         if (t >= 0 && t < 64) {
             uint8 q = full[uint8(uint16(t))];
-            // Blur opponent piece type: 2 = unknown white, 8 = unknown black
-            out[uint8(uint16(t))] = (q == 0 || isWhite(q) == isWhitePlayer) ? q : (isWhite(q) ? 2 : 8);
+            // 99 = unknown white, 100 = unknown black
+            out[uint8(uint16(t))] = (q == 0 || isWhite(q) == isWhitePlayer) ? q : (isWhite(q) ? 99 : 100);
         }
+    }
+
+    function gameState(uint256 id)
+        external
+        view
+        returns (Phase phase, bool turnWhite, address white, address black)
+    {
+        Game storage g = games[id];
+        return (g.phase, g.turnWhite, g.white, g.black);
     }
 
     function isWhite(uint8 p) private pure returns (bool) {

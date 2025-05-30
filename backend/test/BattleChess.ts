@@ -72,6 +72,16 @@ describe('BattleChess', () => {
     // Let's check what Bob can actually see
     expect(boardBob[40]).to.equal(7n) // Bob's own pawn visible to him
 
+    // Bob's pawn at 40 should see white pieces at 32, 31, 33 as blurred (99)
+    // Since Alice moved pawns to 16 and 20, these aren't in Bob's vision
+    // But let's check if any white pieces are visible to Bob as blur
+    const hasBlurredWhite = boardBob.some(piece => piece === 99n)
+    const hasBlurredBlack = boardAlice.some(piece => piece === 100n)
+    
+    // Test blur codes - at least one should be visible if pieces are in range
+    console.log('Bob sees blurred white pieces:', hasBlurredWhite)
+    console.log('Alice sees blurred black pieces:', hasBlurredBlack)
+
     // Alice's pieces moved forward, so she might see enemy pieces
     // But at the start, pieces are too far apart to see each other
     // So let's just verify the moved pieces are in correct positions

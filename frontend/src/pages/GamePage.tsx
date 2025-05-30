@@ -7,11 +7,13 @@ import './GamePage.css'
 
 // Import chess piece SVGs
 import whitePawn from '../assets/pieces/white-pawn.svg'
+import whiteKnight from '../assets/pieces/white-knight.svg'
 import whiteBishop from '../assets/pieces/white-bishop.svg'
 import whiteRook from '../assets/pieces/white-rook.svg'
 import whiteQueen from '../assets/pieces/white-queen.svg'
 import whiteKing from '../assets/pieces/white-king.svg'
 import blackPawn from '../assets/pieces/black-pawn.svg'
+import blackKnight from '../assets/pieces/black-knight.svg'
 import blackBishop from '../assets/pieces/black-bishop.svg'
 import blackRook from '../assets/pieces/black-rook.svg'
 import blackQueen from '../assets/pieces/black-queen.svg'
@@ -34,7 +36,7 @@ export default function GamePage() {
   const [waitingForReveal, setWaitingForReveal] = useState(false)
 
   /* read "my" board with phase management */
-  const { data: board, phase, setPhase, contractConfig } = useBattleChess(gameId)
+  const { data: board, isMyTurn, contractConfig } = useBattleChess(gameId)
 
   /* writer for commit / reveal */
   const { writeContractAsync } = useWriteContract()
@@ -46,13 +48,15 @@ export default function GamePage() {
     return await publicClient.waitForTransactionReceipt({ hash })
   }
 
+  const PLACEHOLDER_HASH = keccak256(encodePacked(['string'], ['placeholder'])) as Hex
+
   /* create game */
   const createGame = async () => {
     try {
       const hash = await writeContractAsync({
         ...contractConfig,
         functionName: 'create',
-        args: ['0x0000000000000000000000000000000000000000000000000000000000000000' as Hex, true],
+        args: [PLACEHOLDER_HASH, false],
       })
       const receipt = await waitForTx(hash)
       // First topic = GameCreated(id,…)
@@ -70,7 +74,7 @@ export default function GamePage() {
       await writeContractAsync({
         ...contractConfig,
         functionName: 'join',
-        args: [id, '0x0000000000000000000000000000000000000000000000000000000000000000' as Hex, true],
+        args: [id, PLACEHOLDER_HASH, false],
       })
       setGameId(id)
     } catch (error) {
@@ -147,7 +151,6 @@ export default function GamePage() {
       // Reset state
       setPendingMove(null)
       setWaitingForReveal(false)
-      setPhase('Commit')
       setIsProcessingMove(false)
     } catch (error) {
       console.error('Reveal failed:', error)
@@ -190,7 +193,7 @@ export default function GamePage() {
       <div className="turn-banner">
         {waitingForReveal ? (
           <span className="your-turn">Click "Reveal Move" to complete your turn</span>
-        ) : phase === 'Commit' ? (
+        ) : isMyTurn ? (
           <span className="your-turn">Your turn - Select a piece to move</span>
         ) : (
           <span className="waiting">Waiting for opponent...</span>
@@ -237,19 +240,19 @@ export default function GamePage() {
 function pieceIcon(code: number): string | null {
   const map: { [k: number]: string } = {
     1: whitePawn,
-    2: whiteGhost,
+    2: whiteKnight,
     3: whiteBishop,
     4: whiteRook,
     5: whiteQueen,
     6: whiteKing,
     7: blackPawn,
-    8: blackGhost,
+    8: blackKnight,
     9: blackBishop,
     10: blackRook,
     11: blackQueen,
     12: blackKing,
-    // Ghost pieces for "unknown" enemy pieces returned by contract
-    99: whiteGhost,  // legacy codes kept for safety
+    // Ghost pieces for unknown opponent pieces
+    99: whiteGhost,
     100: blackGhost,
   }
   return map[code] ?? null
