@@ -1,8 +1,7 @@
 import { FC } from 'react'
 import { Layout } from './components/Layout'
 import { createHashRouter, RouterProvider } from 'react-router-dom'
-import { HomePage } from './pages/HomePage'
-import { Web3AuthContextProvider } from './providers/Web3AuthProvider'
+import GamePage from './pages/GamePage'
 import { AppStateContextProvider } from './providers/AppStateProvider'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { RouterErrorBoundary } from './components/RouterErrorBoundary'
@@ -38,11 +37,11 @@ const router = createHashRouter([
     children: [
       {
         path: '/',
-        element: <HomePage />,
+        element: <GamePage />,
       },
       {
         path: '*',
-        element: <HomePage />,
+        element: <GamePage />,
       },
     ],
   },
@@ -101,11 +100,9 @@ export const App: FC = () => {
             avatar={({ size, address }) => <AccountAvatar size={size} address={address} />}
             modalSize="compact"
           >
-            <Web3AuthContextProvider>
-              <AppStateContextProvider>
-                <RouterProvider router={router} />
-              </AppStateContextProvider>
-            </Web3AuthContextProvider>
+            <AppStateContextProvider>
+              <RouterProvider router={router} />
+            </AppStateContextProvider>
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>

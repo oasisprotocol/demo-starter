@@ -13,7 +13,8 @@
   "files": [
     "contracts",
     "lib",
-    "src"
+    "src",
+    "abis"
   ],
   "scripts": {
     "lint:prettier": "prettier --check --plugin-search-dir=. --cache '*.json' 'tsconfig/*.json' '{scripts,test}/**/*.ts' 'contracts/**/*.sol'",

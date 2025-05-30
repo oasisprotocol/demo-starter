@@ -1,0 +1,373 @@
+## 1 Backend : replace the smart-contract
+
+### 1.1 Delete the old capsule contract & tests
+
+```bash
+rm backend/contracts/TimeCapsule.sol
+rm -rf backend/test
+```
+
+### 1.2 Create `backend/contracts/BattleChess.sol`
+
+```solidity
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.8.25;
+
+import {Sapphire} from "@oasisprotocol/sapphire-contracts/contracts/Sapphire.sol";
+
+contract BattleChess {
+    // ───── public constants ────────────────────────────────────────────────────
+    uint8 public constant BOARD_SIZE = 64; // 0…63 squares
+
+    // Piece encoding: 0=empty, 1-6 white, 7-12 black  (P,N,B,R,Q,K order)
+    enum Phase {Commit, Reveal}
+
+    struct Game {
+        address white;
+        address black;
+        bool turnWhite;
+        Phase phase;
+        bytes32 pendingHash;   // hash(from,to,promo,salt)
+        bytes32 randSeed;      // immutable per-game
+        uint8[64] board;       // whole board kept **confidential**
+    }
+
+    mapping(uint256 => Game) private games;
+    uint256 public nextId;
+
+    // ───── events (tiny, to avoid leaks) ──────────────────────────────────────
+    event GameCreated(uint256 indexed id, address indexed white);
+    event Joined(uint256 indexed id, address indexed black);
+    event Reveal(uint256 indexed id, uint8 toSq, uint8 pieceCode);
+
+    // ───── game lifecycle ─────────────────────────────────────────────────────
+    function create(bytes32 firstMoveHash) external returns (uint256 id) {
+        id = nextId++;
+        Game storage g = games[id];
+        g.white = msg.sender;
+        g.turnWhite = true;
+        g.phase = Phase.Commit;
+        g.pendingHash = firstMoveHash;
+        g.randSeed = bytes32(Sapphire.randomBytes(32, abi.encodePacked(id)));
+        _setupBoard(g.board);
+        emit GameCreated(id, msg.sender);
+    }
+
+    function join(uint256 id, bytes32 firstMoveHash) external {
+        Game storage g = games[id];
+        require(g.black == address(0), "taken");
+        g.black = msg.sender;
+        g.pendingHash = firstMoveHash;
+        emit Joined(id, msg.sender);
+    }
+
+    // ───── commit / reveal -----------------------------------------------------
+    function commit(uint256 id, bytes32 moveHash) external {
+        Game storage g = games[id];
+        _authTurn(g);
+        require(g.phase == Phase.Commit, "bad phase");
+        g.pendingHash = moveHash;
+        g.phase = Phase.Reveal;
+    }
+
+    function reveal(
+        uint256 id,
+        uint8 fromSq,
+        uint8 toSq,
+        uint8 promo,
+        bytes32 salt
+    ) external {
+        Game storage g = games[id];
+        _authTurn(g);
+        require(g.phase == Phase.Reveal, "bad phase");
+        require(
+            keccak256(abi.encodePacked(fromSq, toSq, promo, salt)) == g.pendingHash,
+            "hash mismatch"
+        );
+
+        // **For demo only**: skip deep legality checks, just move & capture.
+        uint8 moving = g.board[fromSq];
+        g.board[fromSq] = 0;
+        g.board[toSq]   = moving;
+
+        emit Reveal(id, toSq, moving);
+        g.turnWhite = !g.turnWhite;
+        g.phase = Phase.Commit;
+    }
+
+    // ───── fog-aware view ------------------------------------------------------
+    function viewBoard(uint256 id) external view returns (uint8[64] memory vis) {
+        Game storage g = games[id];
+        bool isWhite = msg.sender == g.white;
+        bool isBlack = msg.sender == g.black;
+        require(isWhite || isBlack, "not a player");
+        _maskBoard(g.board, isWhite, vis);
+    }
+
+    // ───── internal helpers (stripped-down) -----------------------------------
+    function _authTurn(Game storage g) private view {
+        require(
+            (g.turnWhite && msg.sender == g.white) ||
+            (!g.turnWhite && msg.sender == g.black),
+            "not your turn"
+        );
+    }
+    function _setupBoard(uint8[64] storage b) private {
+        // minimal: pawns + kings
+        for (uint8 i=8;i<16;i++) b[i]=1;          // white pawns
+        for (uint8 i=48;i<56;i++) b[i]=7;         // black pawns
+        b[4]=6;  b[60]=12;                        // kings
+    }
+    function _maskBoard(uint8[64] storage full, bool isWhite, uint8[64] memory out) private view {
+        // show own pieces
+        uint8 low= isWhite?1:7;
+        uint8 high= low+5;
+        for(uint8 i=0;i<64;i++){
+            uint8 p=full[i];
+            bool own = p>=low && p<=high;
+            if(own){out[i]=p; _ray(full,i,out);}  // light squares in sight
+        }
+    }
+    function _ray(uint8[64] storage full,uint8 src,uint8[64] memory out) private view {
+        int8[8] memory delta=[int8(-8),8,-1,1,-9,-7,9,7];
+        uint8 p=full[src];
+        // pawns & kings only see their move squares (simplified)
+        if(p==1||p==7){int8 d=isWhite(p)?int8(8):-8;_spot(src,d,full,out);}
+        else if(p==6||p==12){
+            for(uint8 k=0;k<8;k++)_spot(src,delta[k],full,out);
+        }
+    }
+    function _spot(uint8 s,int8 d,uint8[64] storage full,uint8[64] memory out) private view {
+        int16 t=int16(int8(s))+int16(d);
+        if(t>=0&&t<64){ out[uint8(t)]=full[uint8(t)]; }
+    }
+    function isWhite(uint8 p) private pure returns(bool){ return p>=1 && p<=6; }
+}
+```
+
+*The mask/ray code is intentionally crude—good enough for a demo.*
+
+### 1.3 Adjust Hardhat config
+
+*Replace every string `TimeCapsule` with `BattleChess` inside* **`backend/hardhat.config.ts`**
+(there are three occurrences).
+Also update the **Hardhat tasks** names from `set-message`, `get-message`… to something chess-related or just delete them for now.
+
+### 1.4 Regenerate Typechain artefacts & ABI
+
+```bash
+pnpm --filter backend build
+```
+
+This overwrites:
+
+```
+backend/abis/BattleChess.json
+backend/typechain-types/**
+```
+
+(No manual edits needed—the compile task already exports ABIs.)
+
+### 1.5 Add minimal tests
+
+Create **`backend/test/BattleChess.ts`** with:
+
+```ts
+import { expect } from 'chai'
+import { ethers } from 'hardhat'
+import { BattleChess } from '../typechain-types'
+
+describe('BattleChess', () => {
+  it('commit-reveal flow works', async () => {
+    const [alice, bob] = await ethers.getSigners()
+    const F = await ethers.getContractFactory('BattleChess')
+    const game = (await F.deploy()) as BattleChess
+
+    // Alice opens game with dummy hash
+    const id = await game.callStatic.create(ethers.keccak256('0x01'))
+    await game.create(ethers.keccak256('0x01'))
+
+    await game.connect(bob).join(id, ethers.keccak256('0x02'))
+
+    // Alice commits & reveals a pawn push (from 8 to 16)
+    const salt = ethers.randomBytes(32)
+    const hash = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(
+      ['uint8','uint8','uint8','bytes32'], [8,16,0,salt]
+    ))
+    await game.commit(id, hash)
+    await game.reveal(id, 8, 16, 0, salt)
+
+    const board = await game.viewBoard(id)
+    expect(board[16]).to.equal(1)   // pawn visible to Alice
+  })
+})
+```
+
+Run:
+
+```bash
+pnpm --filter backend test
+```
+
+---
+
+## 2 Frontend : rebuild UI as a simple chessboard
+
+### 2.1 Replace heavy “TimeCapsule” page
+
+Delete `/frontend/src/pages/HomePage/` entirely.
+Create `/frontend/src/pages/GamePage.tsx` :
+
+```tsx
+import { useState, useEffect } from 'react'
+import { useAccount, useReadContract, useWriteContract } from 'wagmi'
+import { WAGMI_CONTRACT_CONFIG } from '../constants/config'
+import { Chess } from 'chess.js'      // new dependency
+import './GamePage.css'               // make an 8×8 CSS grid
+
+export default function GamePage() {
+  const { address } = useAccount()
+  const [gameId, setGameId] = useState<bigint>()
+  const [selection, setSelection] = useState<number|null>(null)
+  const [salt, setSalt] = useState<`0x${string}`>()
+  const [localChess] = useState(new Chess())     // client-side rules
+
+  /* read “my” board */
+  const { data: board } = useReadContract({
+    ...WAGMI_CONTRACT_CONFIG,
+    functionName: 'viewBoard',
+    args: [gameId],
+    query: { enabled: gameId !== undefined },
+  })
+
+  /* writer for commit / reveal */
+  const { writeContractAsync } = useWriteContract()
+
+  /* click handler */
+  const clickSq = async (sq:number) => {
+    if(selection===null){ setSelection(sq); return }
+    const from=selection, to=sq
+    const s = crypto.randomUUID().slice(0,32) as string;   // quick salt
+    const hash = await window.ethereum.request({ method:'eth_hash', params:[
+      ethers.keccak256(new ethers.AbiCoder().encode(['uint8','uint8','uint8','bytes32'],[from,to,0,s]))
+    ]}) as `0x${string}`
+    await writeContractAsync({ ...WAGMI_CONTRACT_CONFIG, functionName:'commit', args:[gameId,hash] })
+    await writeContractAsync({ ...WAGMI_CONTRACT_CONFIG, functionName:'reveal', args:[gameId,from,to,0,s] })
+    setSelection(null)
+  }
+
+  if(!board) return <p>Connect wallet / join game…</p>
+
+  return (
+    <div className="board">
+      {Array.from({length:64}).map((_,i)=>
+        <div key={i} className="sq" onClick={()=>clickSq(i)}>
+          {pieceIcon(board[i])}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function pieceIcon(code:number){
+  const map:{[k:number]:string}={
+    1:'♙',2:'♘',3:'♗',4:'♖',5:'♕',6:'♔',
+    7:'♟',8:'♞',9:'♝',10:'♜',11:'♛',12:'♚'
+  }
+  return map[code] ?? ''
+}
+```
+
+Add `/frontend/src/pages/GamePage.css`:
+
+```css
+.board { display:grid; grid-template-columns:repeat(8,40px); width:320px; }
+.sq   { width:40px;height:40px; display:flex;align-items:center;justify-content:center;
+        font-size:28px; cursor:pointer; background:#eee; }
+.sq:nth-child(16n+1),.sq:nth-child(16n+3),.sq:nth-child(16n+5),.sq:nth-child(16n+7),
+.sq:nth-child(16n+10),.sq:nth-child(16n+12),.sq:nth-child(16n+14),.sq:nth-child(16n+16)
+       { background:#6699ff22; }
+```
+
+### 2.2 Route swap
+
+In `frontend/src/App.tsx`
+
+* Replace `HomePage` imports with `GamePage`.
+* Update router paths so `/` renders `GamePage`.
+
+### 2.3 Simplify config
+
+`frontend/src/constants/config.ts` → delete SIWE types, keep:
+
+```ts
+import ABI from '../../../backend/abis/BattleChess.json'
+export const WAGMI_CONTRACT_CONFIG = {
+  address: import.meta.env.VITE_GAME_ADDR as `0x${string}`,
+  abi: ABI,
+}
+```
+
+### 2.4 Drop SIWE & Web3Auth
+
+Delete `providers/Web3Auth*`, `hooks/useWeb3Auth.ts`, and all references.
+They are unnecessary because `viewBoard` is already restricted by `msg.sender`.
+
+Remove unused context providers from `App.tsx`.
+
+### 2.5 Dependencies
+
+```bash
+pnpm --filter frontend add chess.js react-responsive # (react-responsive remains)
+pnpm --filter frontend add -D @types/chess.js
+pnpm install
+```
+
+### 2.6 Environment
+
+Rename env var in both `.env.*` files:
+
+```
+VITE_GAME_ADDR=0xYourBattleChessAddress
+```
+
+### 2.7 Update Cypress / Playwright tests
+
+Minimal smoke test (`frontend/test/e2e.spec.ts`):
+
+```ts
+test('board renders', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('.board')).toBeVisible()
+})
+```
+
+---
+
+## 3 Monorepo clean-up
+
+1. **Remove** unused backend exports:
+
+   ```bash
+   sed -i '' '/TimeCapsule/d' backend/src/index.ts
+   echo "export { BattleChess, BattleChess__factory } from '../typechain-types'" > backend/src/index.ts
+   ```
+
+2. **Drop** obsolete docs: edit root `README.md` to describe BattleChess.
+
+3. **CI**
+   Update GitHub actions paths so they run `pnpm --filter backend test` and `pnpm --filter frontend test`.
+
+---
+
+## 4 Local run instructions (will appear in README)
+
+```bash
+# one-time
+docker run -it -p8544-8548:8544-8548 ghcr.io/oasisprotocol/sapphire-localnet
+pnpm --filter backend hardhat deploy localhost --network sapphire-localnet   # prints contract addr
+export VITE_GAME_ADDR=0x...  # paste above addr
+pnpm --filter frontend dev
+```
+
+Visit [http://localhost:5173](http://localhost:5173), connect MetaMask (same mnemonic as localnet), **create game**, chose squares—pieces will pop out of the fog!

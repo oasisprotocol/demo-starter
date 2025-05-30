@@ -38,67 +38,57 @@ task(TASK_EXPORT_ABIS, async (_args, hre) => {
   )
 })
 
-// Unencrypted contract deployment.
-task('deploy')
-  .addPositionalParam('domain', 'dApp domain which Metamask will be allowed for signing-in')
-  .setAction(async (args, hre) => {
+// BattleChess deployment with automatic frontend env update
+task('deploy-battlechess')
+  .setAction(async (_, hre) => {
     await hre.run('compile')
-
-    // For deployment unwrap the provider to enable contract verification.
-    const uwProvider = new JsonRpcProvider(hre.network.config.url)
-    const TimeCapsuleFactory = await hre.ethers.getContractFactory( // Renamed
-      'TimeCapsule', // Renamed
-      new hre.ethers.Wallet(accounts[0], uwProvider)
-    )
-    const timeCapsule = await TimeCapsuleFactory.deploy(args.domain) // Renamed
-    await timeCapsule.waitForDeployment() // Renamed
-
-    console.log(`TimeCapsule address: ${await timeCapsule.getAddress()}`) // Renamed
-    return timeCapsule // Renamed
-  })
-
-// Read message from the TimeCapsule.
-task('get-message') // Renamed task
-  .addPositionalParam('address', 'contract address')
-  .setAction(async (args, hre) => {
-    await hre.run('compile')
-
-    const timeCapsule = await hre.ethers.getContractAt('TimeCapsule', args.address) // Renamed
-    const domain = await timeCapsule.domain() // Renamed
-
-    const acc = new hre.ethers.Wallet(accounts[0], hre.ethers.provider)
-    const siweMsg = new SiweMessage({
-      domain,
-      address: await acc.getAddress(),
-      uri: domain.includes(':') ? domain : `http://${domain}`,
-      version: '1',
-      chainId: Number((await hre.ethers.provider.getNetwork()).chainId),
-    }).toMessage()
-    const sig = hre.ethers.Signature.from(await acc.signMessage(siweMsg))
-    const authToken = await timeCapsule.login(siweMsg, sig) // Renamed
     
+    const [deployer] = await hre.ethers.getSigners()
+    const battleChess = await (await hre.ethers.deployContract('BattleChess')).waitForDeployment()
+    const address = await battleChess.getAddress()
+    
+    console.log(`BattleChess deployed to: ${address}`)
+    
+    // Update frontend environment file if it exists
+    const envPath = path.join(__dirname, '../../frontend/.env.development')
     try {
-      const [messageContent, msgAuthor, msgRevealTimestamp] = await timeCapsule.getMessage(authToken) // Renamed and updated return
-      console.log(`The message is: ${messageContent}, author: ${msgAuthor}, reveals at: ${new Date(Number(msgRevealTimestamp) * 1000)}`)
-    } catch (e: any) {
-      console.error(`Failed to get message: ${e.message}`)
-      const status = await timeCapsule.getCapsuleStatus()
-      console.log(`Capsule status: Author ${status.currentAuthor}, Reveals at ${new Date(Number(status.currentRevealTimestamp) * 1000)}, Ready: ${status.isReadyToReveal}`)
+      await fs.access(envPath) // Check if file exists
+      await fs.writeFile(envPath, `VITE_GAME_ADDR=${address}\nVITE_NETWORK=0x5afd\n`)
+      console.log(`Updated frontend config at ${envPath}`)
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        console.log(`Frontend env file not found at ${envPath}, skipping auto-update`)
+      } else {
+        console.warn(`Could not update frontend config: ${err}`)
+      }
     }
+    
+    return battleChess
   })
 
-// Set message in TimeCapsule.
-task('set-message') // Renamed task
+// Create a new chess game
+task('create-game')
   .addPositionalParam('address', 'contract address')
-  .addPositionalParam('message', 'message to set')
-  .addPositionalParam('duration', 'reveal duration in seconds from now')
   .setAction(async (args, hre) => {
     await hre.run('compile')
 
-    let timeCapsule = await hre.ethers.getContractAt('TimeCapsule', args.address) // Renamed
-    const tx = await timeCapsule.setMessage(args.message, parseInt(args.duration)) // Renamed and added duration
+    const battleChess = await hre.ethers.getContractAt('BattleChess', args.address)
+    const dummyHash = hre.ethers.keccak256('0x01')
+    const tx = await battleChess.create(dummyHash)
     const receipt = await tx.wait()
-    console.log(`Success! Transaction hash: ${receipt!.hash}`)
+    console.log(`Game created! Transaction hash: ${receipt!.hash}`)
+  })
+
+// View board state
+task('view-board')
+  .addPositionalParam('address', 'contract address')
+  .addPositionalParam('gameId', 'game ID')
+  .setAction(async (args, hre) => {
+    await hre.run('compile')
+
+    const battleChess = await hre.ethers.getContractAt('BattleChess', args.address)
+    const board = await battleChess.viewBoard(args.gameId)
+    console.log('Board state:', board)
   })
 
 // Hardhat Node and sapphire-localnet test mnemonic.
@@ -137,7 +127,7 @@ const config: HardhatUserConfig = {
     },
   },
   solidity: {
-    version: '0.8.16',
+    version: '0.8.25',
     settings: {
       optimizer: {
         enabled: true,

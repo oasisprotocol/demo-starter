@@ -1,3 +1,1 @@
-export {
-    TimeCapsule, TimeCapsule__factory,
-} from "../typechain-types"
+export { BattleChess, BattleChess__factory } from '../typechain-types'

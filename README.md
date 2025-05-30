@@ -1,16 +1,45 @@
-# Oasis Time Capsule dApp
+# Oasis Fog of War Chess dApp
 
-This is a demonstration dApp for Oasis Sapphire, showcasing confidential time-locked messages:
+This is a demonstration dApp for Oasis Sapphire, showcasing a fog of war chess game with confidential board state where players can only see their own pieces and must commit/reveal moves to maintain privacy:
 
-- `backend` contains the TimeCapsule Solidity contract (an evolution of the original MessageBox) and Hardhat utils
+- `backend` contains the BattleChess Solidity contract and Hardhat utils
   for deploying the contract and managing it via command line.
 - `frontend` contains a React-based web application which communicates with your
-  smart contract, allowing users to set messages that can only be revealed after a specified time.
+  smart contract, allowing players to play chess where each player can only see their own pieces and moves are committed/revealed.
+
+## Features
+
+- **Fog of War**: Players can only see their own pieces and squares their pieces can move to
+- **Commit/Reveal**: Two-phase move system to prevent information leakage
+- **Random First Move**: Players can start games without pre-computing move hashes using the `wantRandom` flag
+- **Full Chess Pieces**: All 32 pieces are set up on the board
+- **Pawn Promotion**: Pawns can be promoted when reaching the opposite end
+- **Move Timeouts**: Each player has ~1 hour (300 blocks) to make their move
+- **Responsive UI**: Board scales properly on mobile devices
 
 This monorepo is set up for `pnpm`. Install dependencies by running:
 
 ```sh
 pnpm install
+```
+
+## Quick Start
+
+```bash
+# one-time
+pnpm install
+
+# 1. local Sapphire chain
+docker run -it -p8544-8548:8544-8548 ghcr.io/oasisprotocol/sapphire-localnet
+
+# 2. deploy contract
+export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  # Hardhat test key 0
+pnpm --filter backend hardhat deploy-battlechess --network sapphire-localnet
+# paste the address into frontend/.env.development  VITE_GAME_ADDR=…
+
+# 3. frontend
+pnpm --filter frontend dev
+# open http://localhost:5173
 ```
 
 ## Backend
@@ -34,7 +63,7 @@ invoking:
 
 ```shell
 export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-npx hardhat deploy localhost --network sapphire-localnet
+npx hardhat deploy-battlechess --network sapphire-localnet
 ```
 
 Similarly, you can run tests on Localnet:
@@ -62,23 +91,22 @@ To deploy the contract on Testnet or Mainnet for your dApp that will be
 accessible on `yourdomain.com`:
 
 ```shell
-npx hardhat deploy yourdomain.com --network sapphire-testnet
-npx hardhat deploy yourdomain.com --network sapphire
+npx hardhat deploy-battlechess --network sapphire-testnet
+npx hardhat deploy-battlechess --network sapphire
 ```
 
 [Sapphire Localnet]: https://github.com/oasisprotocol/oasis-web3-gateway/pkgs/container/sapphire-localnet
 
 ## Frontend
 
-Once the contract is deployed, the TimeCapsule address will be reported. Store it
-inside the `frontend` folder's `.env.development` (for Localnet) or
-`.env.production` (for Testnet or Mainnet - uncomment the appropriate network),
-for example:
+Once the contract is deployed, the BattleChess address will be reported and automatically
+written to the frontend's `.env.development` file (for Localnet). For production deployments,
+you'll need to manually update `.env.production` with the contract address and network ID:
 
 ```
-VITE_MESSAGE_BOX_ADDR=0x5FbDB2315678afecb367f032d93F642f64180aa3
+VITE_GAME_ADDR=0x5FbDB2315678afecb367f032d93F642f64180aa3
+VITE_NETWORK=0x5aff  # for testnet, or 0x5afe for mainnet
 ```
-(Note: The environment variable name `VITE_MESSAGE_BOX_ADDR` is kept from the original template for simplicity, but it now points to the `TimeCapsule` contract.)
 
 ### Run locally
 
@@ -97,6 +125,14 @@ deploy your dApp.
 Note: If you use the same MetaMask accounts in your browser and restart the
 sapphire-localnet docker image, don't forget to _clear your MetaMask activity_
 each time to fetch correct account nonce.
+
+### Environment Variables
+
+The frontend uses the following environment variables:
+
+- `VITE_GAME_ADDR`: The deployed BattleChess contract address
+- `VITE_NETWORK`: The network ID (0x5afe for mainnet, 0x5aff for testnet, 0x5afd for localnet)
+- `VITE_NETWORK_GAS_HINT`: (Optional) Suggested gas price for transactions
 
 ### Production deployment
 
