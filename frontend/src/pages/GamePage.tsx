@@ -95,7 +95,9 @@ export default function GamePage() {
     const from = selection
     const to = sq
     const promo = 0
-    const salt = `0x${Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('hex')}` as Hex
+    // Generate a cryptographically-safe salt
+    const saltBytes = crypto.getRandomValues(new Uint8Array(32))
+    const salt = `0x${Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('')}` as Hex
 
     try {
       setIsProcessingMove(true)
@@ -125,6 +127,7 @@ export default function GamePage() {
       setSelection(null)
       setIsProcessingMove(false)
       setPendingMove(null)
+      setWaitingForReveal(false)
     }
   }
 
@@ -249,8 +252,8 @@ function pieceIcon(code: number): string | null {
     11: blackQueen,
     12: blackKing,
     // Ghost pieces for unknown opponent pieces
-    99: whiteGhost, // Unknown white piece
-    100: blackGhost, // Unknown black piece
+    99: whiteGhost,
+    100: blackGhost,
   }
   return map[code] ?? null
 }

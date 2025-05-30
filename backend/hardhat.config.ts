@@ -52,7 +52,8 @@ task('deploy-battlechess').setAction(async (_, hre) => {
   const envPath = path.join(__dirname, '../../frontend/.env.development')
   try {
     await fs.access(envPath) // Check if file exists
-    await fs.writeFile(envPath, `VITE_GAME_ADDR=${address}\nVITE_NETWORK=0x5afd\n`)
+    const chainHex = '0x' + hre.network.config.chainId!.toString(16)
+    await fs.writeFile(envPath, `VITE_GAME_ADDR=${address}\nVITE_NETWORK=${chainHex}\n`)
     console.log(`Updated frontend config at ${envPath}`)
   } catch (err) {
     if (err.code === 'ENOENT') {

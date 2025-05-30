@@ -155,7 +155,7 @@ describe('BattleChess', () => {
 
     // This should revert since we're trying to move a pawn with an invalid promo code
     // The contract validates promo codes even for regular moves
-    await expect(game.reveal(id, 8, 16, invalidPromo, salt)).to.not.be.reverted
+    await expect(game.reveal(id, 8, 16, invalidPromo, salt)).to.be.reverted
 
     // Test that valid promotion codes (2-5 for white) would be accepted in theory
     // The contract properly validates promotion codes when a pawn reaches rank 8
@@ -204,7 +204,9 @@ describe('BattleChess', () => {
     }
 
     // Bob should be able to claim timeout since Alice hasn't revealed
-    await expect(game.connect(bob).claimTimeout(id)).to.not.be.reverted
+    await expect(game.connect(bob).claimTimeout(id))
+      .to.emit(game, 'GameEnded')
+      .withArgs(id, bob.address, 'timeout')
 
     // After timeout claim, the board should have white pieces cleared
     const boardBob = await game.connect(bob).viewBoard(id)
