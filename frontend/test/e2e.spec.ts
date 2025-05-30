@@ -12,10 +12,10 @@ test('can create game and make first move', async ({ page }) => {
   await page.waitForTimeout(2000)
 
   // Make first move - select piece
-  await page.locator('.board .sq').nth(8).click() // select pawn at e2
+  await page.locator('.board .sq').nth(8).click() // select pawn at a2
 
   // Complete the move - this triggers commit transaction
-  await page.locator('.board .sq').nth(16).click() // move to e3
+  await page.locator('.board .sq').nth(16).click() // move to a3
 
   // Wait for commit transaction and reveal button to appear
   await expect(page.getByRole('button', { name: /reveal move/i })).toBeVisible({ timeout: 10000 })
@@ -23,6 +23,10 @@ test('can create game and make first move', async ({ page }) => {
   // Click reveal to send second transaction
   await page.getByRole('button', { name: /reveal move/i }).click()
 
-  // Wait for reveal transaction and board update
-  await expect(page.locator('.board .sq').nth(16)).toHaveText(/♙|♟/, { timeout: 10000 })
+  // Wait for reveal transaction and board update - check for piece icon
+  await expect(page.locator('.board .sq').nth(16).locator('.piece-icon')).toBeVisible({ timeout: 10000 })
+  
+  // Verify the piece icon is a white pawn
+  const pieceIcon = await page.locator('.board .sq').nth(16).locator('.piece-icon').getAttribute('src')
+  expect(pieceIcon).toContain('white-pawn')
 })

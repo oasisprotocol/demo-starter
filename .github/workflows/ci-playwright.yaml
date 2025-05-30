@@ -61,7 +61,7 @@ jobs:
         working-directory: backend
         id: deploy
         run: |
-          echo "message_box_address=$(pnpm hardhat deploy localhost --network sapphire-localnet | grep -o '0x.*')" >> $GITHUB_OUTPUT
+          echo "game_address=$(pnpm hardhat deploy-battlechess --network sapphire-localnet | grep -o '0x.*')" >> $GITHUB_OUTPUT
 
       - name: Build
         working-directory: frontend
@@ -75,7 +75,8 @@ jobs:
         working-directory: frontend
         run: xvfb-run pnpm test
         env:
-          VITE_MESSAGE_BOX_ADDR: ${{ steps.deploy.outputs.message_box_address }}
+          VITE_GAME_ADDR: ${{ steps.deploy.outputs.game_address }}
+          VITE_NETWORK: 0x5afd
 
       - name: Upload playwright test-results
         if: ${{ failure() }}

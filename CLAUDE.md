@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an Oasis Sapphire Time Capsule dApp demonstrating confidential time-locked messages. It consists of:
+This is an Oasis Sapphire Fog-of-War Chess dApp demonstrating confidential gameplay mechanics. It consists of:
 
-- **Backend**: Solidity smart contract (`TimeCapsule`) with Hardhat tooling
+- **Backend**: Solidity smart contract (`BattleChess`) with Hardhat tooling
 - **Frontend**: React-based web application using Vite, RainbowKit, and wagmi
 
 ## Common Development Commands
@@ -25,12 +25,12 @@ npx hardhat test --network sapphire-localnet
 
 # Deploy contract
 export PRIVATE_KEY=0x...
-npx hardhat deploy yourdomain.com --network sapphire-testnet
-npx hardhat deploy yourdomain.com --network sapphire
+pnpm hardhat deploy-battlechess --network sapphire-testnet
+pnpm hardhat deploy-battlechess --network sapphire
 
 # Hardhat tasks for contract interaction
-npx hardhat set-message <address> "message" <duration_in_seconds> --network <network>
-npx hardhat get-message <address> --network <network>
+pnpm hardhat create-game <address> --network <network>
+pnpm hardhat view-board <address> <gameId> --network <network>
 
 # Linting and formatting
 pnpm lint
@@ -62,19 +62,24 @@ pnpm prettier
 
 ## Architecture Overview
 
-### Smart Contract (`TimeCapsule.sol`)
+### Smart Contract (`BattleChess.sol`)
 
-The contract inherits from `SiweAuth` for authentication and implements:
+The contract implements fog-of-war chess with confidential board state:
 
-- `setMessage()`: Store a message with a reveal timestamp
-- `getMessage()`: Retrieve message after reveal time (author only)
-- `getCapsuleStatus()`: Public view of capsule state
+- `create()`: Create a new game with optional random first move
+- `join()`: Join an existing game  
+- `commit()`: Submit a hashed move
+- `reveal()`: Reveal the actual move
+- `claimTimeout()`: Claim victory if opponent times out
+- `viewBoard()`: View board with fog-of-war visibility
 
 Key features:
 
-- Messages are encrypted until reveal time
-- Only the message author can retrieve after unlock
-- Uses SIWE (Sign-In with Ethereum) for authentication
+- Full board state is kept confidential
+- Players only see their own pieces and adjacent squares
+- Commit-reveal pattern prevents front-running
+- Hash-based replay protection
+- Automatic queen promotion for pawns
 
 ### Frontend Structure
 
@@ -92,7 +97,7 @@ Backend deployment requires:
 
 Frontend requires:
 
-- `VITE_MESSAGE_BOX_ADDR`: Deployed TimeCapsule contract address
+- `VITE_GAME_ADDR`: Deployed BattleChess contract address
 - `VITE_NETWORK`: Network ID (0x5afe for mainnet, 0x5aff for testnet, 0x5afd for localnet)
 
 ## Testing Strategy

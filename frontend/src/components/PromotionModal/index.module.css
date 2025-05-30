@@ -21,7 +21,7 @@
   width: 90%;
 }
 
-.modal h3 {
+.title {
   margin: 0 0 20px 0;
   color: #fff;
   font-size: 1.5rem;
@@ -55,7 +55,7 @@
   box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3);
 }
 
-.pieceButton img {
+.pieceIcon {
   width: 60px;
   height: 60px;
   display: block;

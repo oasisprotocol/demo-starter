@@ -1,4 +1,5 @@
-import styles from './index.module.css'
+import React from 'react';
+import styles from './index.module.css';
 
 // Import piece SVGs
 import whiteKnight from '../../assets/pieces/white-knight.svg'
@@ -11,12 +12,12 @@ import blackRook from '../../assets/pieces/black-rook.svg'
 import blackQueen from '../../assets/pieces/black-queen.svg'
 
 interface PromotionModalProps {
-  isWhite: boolean
-  onSelect: (promoCode: number) => void
-  onCancel: () => void
+  isWhite: boolean;
+  onSelect: (piece: number) => void;
+  onCancel: () => void;
 }
 
-export default function PromotionModal({ isWhite, onSelect, onCancel }: PromotionModalProps) {
+export const PromotionModal: React.FC<PromotionModalProps> = ({ isWhite, onSelect, onCancel }) => {
   const pieces = isWhite
     ? [
         { code: 5, icon: whiteQueen, name: 'Queen' },
@@ -33,17 +34,17 @@ export default function PromotionModal({ isWhite, onSelect, onCancel }: Promotio
 
   return (
     <div className={styles.overlay} onClick={onCancel}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
-        <h3>Choose promotion piece</h3>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <h3 className={styles.title}>Choose promotion piece</h3>
         <div className={styles.pieces}>
-          {pieces.map(piece => (
+          {pieces.map((piece) => (
             <button
               key={piece.code}
               className={styles.pieceButton}
               onClick={() => onSelect(piece.code)}
               aria-label={`Promote to ${piece.name}`}
             >
-              <img src={piece.icon} alt={piece.name} />
+              <img src={piece.icon} alt={piece.name} className={styles.pieceIcon} />
             </button>
           ))}
         </div>
@@ -52,5 +53,5 @@ export default function PromotionModal({ isWhite, onSelect, onCancel }: Promotio
         </button>
       </div>
     </div>
-  )
-}
+  );
+};

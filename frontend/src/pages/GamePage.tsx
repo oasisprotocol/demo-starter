@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useAccount, useWriteContract, usePublicClient, useChainId, useSwitchChain } from 'wagmi'
 import { keccak256, encodePacked, type Hex } from 'viem'
 import { useBattleChess } from '../hooks/useBattleChess'
 import { useAppState } from '../hooks/useAppState'
-import PromotionModal from '../components/PromotionModal'
+import { PromotionModal } from '../components/PromotionModal'
 import './GamePage.css'
 
 // Import chess piece SVGs
@@ -34,11 +34,12 @@ export default function GamePage() {
   const [selection, setSelection] = useState<number | null>(null)
   const [isProcessingMove, setIsProcessingMove] = useState(false)
   const [pendingMove, setPendingMove] = useState<{ from: number; to: number; salt: Hex; promo: number } | null>(null)
+  const [waitingForReveal, setWaitingForReveal] = useState(false)
+  const [showPromotion, setShowPromotion] = useState(false)
   const [promotionMove, setPromotionMove] = useState<{ from: number; to: number } | null>(null)
 
   /* read "my" board with phase management */
-  const { data: board, isMyTurn, phase, contractConfig } = useBattleChess(gameId)
-  const boardData = board as Board | undefined
+  const { data: board, isMyTurn, contractConfig, phase, turnWhite, playerColor } = useBattleChess(gameId)
 
   /* writer for commit / reveal */
   const { writeContractAsync } = useWriteContract()
@@ -50,7 +51,12 @@ export default function GamePage() {
     return await publicClient.waitForTransactionReceipt({ hash })
   }
 
-  const PLACEHOLDER_HASH = keccak256(encodePacked(['string'], ['placeholder'])) as Hex
+  // Generate random placeholder hash for first moves
+  const generatePlaceholderHash = () => {
+    const saltBytes = crypto.getRandomValues(new Uint8Array(32))
+    const salt = `0x${Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('')}` as Hex
+    return keccak256(encodePacked(['uint8', 'uint8', 'uint8', 'bytes32'], [0, 0, 0, salt])) as Hex
+  }
 
   /* create game */
   const createGame = async () => {
@@ -58,7 +64,7 @@ export default function GamePage() {
       const hash = await writeContractAsync({
         ...contractConfig,
         functionName: 'create',
-        args: [PLACEHOLDER_HASH, false],
+        args: [generatePlaceholderHash(), false],
       })
       const receipt = await waitForTx(hash)
       // First topic = GameCreated(id,…)
@@ -76,7 +82,7 @@ export default function GamePage() {
       await writeContractAsync({
         ...contractConfig,
         functionName: 'join',
-        args: [id, PLACEHOLDER_HASH, false],
+        args: [id, generatePlaceholderHash(), false],
       })
       setGameId(id)
     } catch (error) {
@@ -85,32 +91,46 @@ export default function GamePage() {
     }
   }
 
+  // Check if pawn reaches promotion rank
+  const isPromotion = (from: number, to: number, piece: number) => {
+    const isPawn = piece === 1 || piece === 7
+    if (!isPawn) return false
+    const toRow = Math.floor(to / 8)
+    return (piece === 1 && toRow === 7) || (piece === 7 && toRow === 0)
+  }
+
   /* click handler */
   const clickSq = async (sq: number) => {
-    if (!isConnected || gameId === undefined || isProcessingMove || !isMyTurn || phase !== 'Commit') return
+    if (!isConnected || gameId === undefined || isProcessingMove || waitingForReveal || !board) return
 
     if (selection === null) {
-      setSelection(sq)
+      // Only select own pieces
+      const piece = board[sq]
+      if (piece && Number(piece) > 0) {
+        setSelection(sq)
+      }
       return
     }
 
     const from = selection
     const to = sq
+    const movingPiece = Number(board[from] || 0)
     
-    // Check if this is a pawn promotion
-    const piece = boardData?.[from]
-    const toPiece = Number(piece || 0)
-    const row = Math.floor(to / 8)
-    
-    if ((toPiece === 1 && row === 7) || (toPiece === 7 && row === 0)) {
-      // Pawn reaching promotion rank - show modal
+    // Check for promotion
+    if (isPromotion(from, to, movingPiece)) {
       setPromotionMove({ from, to })
+      setShowPromotion(true)
       setSelection(null)
       return
     }
-    
+
     // Regular move
-    const promo = 0
+    await commitMove(from, to, 0)
+  }
+
+  const commitMove = async (from: number, to: number, promo: number) => {
+    if (!gameId) return
+    
     // Generate a cryptographically-safe salt
     const saltBytes = crypto.getRandomValues(new Uint8Array(32))
     const salt = `0x${Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('')}` as Hex
@@ -121,6 +141,7 @@ export default function GamePage() {
 
       // Store move details for reveal
       setPendingMove({ from, to, salt, promo })
+      setWaitingForReveal(true)
 
       // Commit phase only
       const hash = keccak256(encodePacked(['uint8', 'uint8', 'uint8', 'bytes32'], [from, to, promo, salt]))
@@ -142,48 +163,20 @@ export default function GamePage() {
       setSelection(null)
       setIsProcessingMove(false)
       setPendingMove(null)
+      setWaitingForReveal(false)
     }
   }
 
-  /* handle promotion selection */
-  const handlePromotion = async (promoCode: number) => {
-    if (!promotionMove || !gameId) return
+  const handlePromotion = async (piece: number) => {
+    if (!promotionMove) return
+    setShowPromotion(false)
+    await commitMove(promotionMove.from, promotionMove.to, piece)
+    setPromotionMove(null)
+  }
 
-    const { from, to } = promotionMove
-    const promo = promoCode
-
-    // Generate a cryptographically-safe salt
-    const saltBytes = crypto.getRandomValues(new Uint8Array(32))
-    const salt = `0x${Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('')}` as Hex
-
-    try {
-      setIsProcessingMove(true)
-      console.log('Committing promotion move...')
-
-      // Store move details for reveal
-      setPendingMove({ from, to, salt, promo })
-
-      // Commit phase only
-      const hash = keccak256(encodePacked(['uint8', 'uint8', 'uint8', 'bytes32'], [from, to, promo, salt]))
-      const commitTx = await writeContractAsync({
-        ...contractConfig,
-        functionName: 'commit',
-        args: [gameId, hash],
-      })
-
-      // Wait for commit to be mined
-      await waitForTx(commitTx)
-
-      // Reset selection
-      setPromotionMove(null)
-      setIsProcessingMove(false)
-    } catch (error) {
-      console.error('Commit failed:', error)
-      setAppError(error instanceof Error ? error.message : 'Failed to commit move')
-      setPromotionMove(null)
-      setIsProcessingMove(false)
-      setPendingMove(null)
-    }
+  const cancelPromotion = () => {
+    setShowPromotion(false)
+    setPromotionMove(null)
   }
 
   /* reveal handler */
@@ -205,6 +198,7 @@ export default function GamePage() {
 
       // Reset state
       setPendingMove(null)
+      setWaitingForReveal(false)
       setIsProcessingMove(false)
     } catch (error) {
       console.error('Reveal failed:', error)
@@ -241,10 +235,55 @@ export default function GamePage() {
     )
   }
 
+  const boardData = board as Board | undefined
+
+  // Add keyboard navigation
+  const handleKeyDown = useCallback((e: KeyboardEvent, index: number) => {
+    const row = Math.floor(index / 8)
+    const col = index % 8
+    let newIndex = index
+
+    switch (e.key) {
+      case 'ArrowUp':
+        if (row > 0) newIndex = (row - 1) * 8 + col
+        break
+      case 'ArrowDown':
+        if (row < 7) newIndex = (row + 1) * 8 + col
+        break
+      case 'ArrowLeft':
+        if (col > 0) newIndex = row * 8 + (col - 1)
+        break
+      case 'ArrowRight':
+        if (col < 7) newIndex = row * 8 + (col + 1)
+        break
+      case ' ':
+      case 'Enter':
+        e.preventDefault()
+        clickSq(index)
+        return
+      default:
+        return
+    }
+
+    e.preventDefault()
+    const element = document.querySelector(`[data-square="${newIndex}"]`) as HTMLElement
+    element?.focus()
+  }, [clickSq])
+
+  // Check if reveal button should be shown
+  const showRevealButton = waitingForReveal && phase === 'Reveal' && isMyTurn
+
   return (
     <div>
+      {showPromotion && (
+        <PromotionModal
+          isWhite={playerColor === 'white'}
+          onSelect={handlePromotion}
+          onCancel={cancelPromotion}
+        />
+      )}
       <div className="turn-banner">
-        {phase === 'Reveal' && isMyTurn && pendingMove ? (
+        {showRevealButton ? (
           <span className="your-turn">Click "Reveal Move" to complete your turn</span>
         ) : phase === 'Commit' && isMyTurn ? (
           <span className="your-turn">Your turn - Select a piece to move</span>
@@ -266,8 +305,10 @@ export default function GamePage() {
               key={i}
               className={`sq ${selection === i ? 'highlight' : ''}`}
               onClick={() => clickSq(i)}
+              onKeyDown={(e) => handleKeyDown(e.nativeEvent, i)}
               tabIndex={0}
               role="gridcell"
+              data-square={i}
               aria-label={`Square ${Math.floor(i / 8) + 1}${String.fromCharCode(97 + (i % 8))}${
                 piece ? `: ${getPieceName(Number(piece))}` : ''
               }`}
@@ -279,19 +320,12 @@ export default function GamePage() {
           )
         })}
       </div>
-      {phase === 'Reveal' && isMyTurn && pendingMove && (
+      {showRevealButton && (
         <div className="reveal-section">
           <button onClick={revealMove} disabled={isProcessingMove}>
             Reveal Move
           </button>
         </div>
-      )}
-      {promotionMove && (
-        <PromotionModal
-          isWhite={boardData?.[promotionMove.from] === 1}
-          onSelect={handlePromotion}
-          onCancel={() => setPromotionMove(null)}
-        />
       )}
     </div>
   )
