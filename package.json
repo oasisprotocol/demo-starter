@@ -8,7 +8,10 @@
     "prepare": "husky",
     "eslint": "eslint . --cache --ext .js,.ts,.tsx --max-warnings 0",
     "prettier-check": "prettier --check . --ignore-path .eslintignore",
-    "prettier": "prettier --write . --ignore-path .eslintignore"
+    "prettier": "prettier --write . --ignore-path .eslintignore",
+    "start": "ts -esm ./main.ts",
+    "tsc": "tsc --noEmit",
+    "dev": "ts-node --project tsconfig.json ./main.ts"
   },
   "engines": {
     "node": ">=20"

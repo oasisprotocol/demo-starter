@@ -15,10 +15,17 @@ export const test = baseTest.extend<{
     })
 
     // Add Sapphire Localnet as a custom network
+    // await wallet.addNetwork({
+    //   networkName: 'Sapphire Localnet',
+    //   rpc: 'http://localhost:8545',
+    //   chainId: 23293,
+    //   symbol: 'ROSE',
+    // })
+
     await wallet.addNetwork({
-      networkName: 'Sapphire Localnet',
-      rpc: 'http://localhost:8545',
-      chainId: 23293,
+      networkName: 'Sapphire',
+      rpc: '1rpc.io/oasis/sapphire',
+      chainId: 23294,
       symbol: 'ROSE',
     })
 

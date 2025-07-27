@@ -1,4 +1,4 @@
-import ABI from '../../../backend/abis/MessageBox.json'
+import ABI from '../../../backend/artifacts/contracts/SendMail.sol/SendMail.json' assert { type: 'json' }
 import { UseReadContractReturnType } from 'wagmi'
 const { VITE_MESSAGE_BOX_ADDR } = import.meta.env
 
@@ -8,11 +8,11 @@ export const OASIS_HOME_PAGE_URL = 'https://oasisprotocol.org/'
 
 export const WAGMI_CONTRACT_CONFIG = {
   address: VITE_MESSAGE_BOX_ADDR as `0x${string}`,
-  abi: ABI,
+  abi: ABI.abi,
 }
 
 export type WagmiUseReadContractReturnType<
   F extends string,
   R = unknown,
   A extends readonly unknown[] = unknown[]
-> = UseReadContractReturnType<typeof ABI, F, A, R | undefined>
+> = UseReadContractReturnType<typeof ABI.abi, F, A, R | undefined>

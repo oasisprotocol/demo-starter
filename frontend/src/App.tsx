@@ -71,7 +71,7 @@ export const wagmiConfig = createConfig({
           ],
         },
       ],
-      { appName: 'Demo starter', projectId: 'PROJECT_ID' }
+      { appName: 'MW SC Sapphire Demo starter', projectId: 'PROJECT_ID' }
     ),
   ],
   chains: [
