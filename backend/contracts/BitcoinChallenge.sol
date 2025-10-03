@@ -54,17 +54,17 @@ contract BitcoinChallenge is SiweAuth {
     }
 
     function getBitcoinAddress() external view returns (string memory) {
-//        bytes memory pkBytes;
-//        (pkBytes, ) = Sapphire.generateSigningKeyPair(
-//            Sapphire.SigningAlg.Secp256k1PrehashedSha256,
-//            abi.encodePacked(secretKey)
-//        );
+        bytes memory pkBytes;
+        (pkBytes, ) = Sapphire.generateSigningKeyPair(
+            Sapphire.SigningAlg.Secp256k1PrehashedSha256,
+            abi.encodePacked(secretKey)
+        );
 
-        Point memory G = Point(GX, GY);
-        uint256 sk = uint256(secretKey);
-        Point memory pubPoint = pointMul(sk, G);
-
-        bytes memory pkBytes = pointToBytes(pubPoint);
+//        Point memory G = Point(GX, GY);
+//        uint256 sk = uint256(secretKey);
+//        Point memory pubPoint = pointMul(sk, G);
+//
+//        bytes memory pkBytes = pointToBytes(pubPoint);
 
         bytes32 hash = sha256(pkBytes);
         bytes20 hash160 = ripemd160(abi.encodePacked(hash));
