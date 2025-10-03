@@ -1,3 +1,3 @@
 export {
-    MessageBox, MessageBox__factory,
+    BitcoinChallenge, BitcoinChallenge__factory,
 } from "../typechain-types"

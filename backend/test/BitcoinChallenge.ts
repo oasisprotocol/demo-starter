@@ -3,12 +3,12 @@ import { config, ethers } from 'hardhat'
 import { SiweMessage } from 'siwe'
 import '@nomicfoundation/hardhat-chai-matchers'
 
-describe('MessageBox', function () {
-  async function deployMessageBox() {
-    const MessageBox_factory = await ethers.getContractFactory('MessageBox')
-    const messageBox = await MessageBox_factory.deploy('localhost')
-    await messageBox.waitForDeployment()
-    return { messageBox }
+describe('BitcoinChallenge', function () {
+  async function deployBitcoinChallenge() {
+    const BitcoinChallenge_factory = await ethers.getContractFactory('BitcoinChallenge')
+    const bitcoinChallenge = await BitcoinChallenge_factory.deploy('localhost')
+    await bitcoinChallenge.waitForDeployment()
+    return { bitcoinChallenge: bitcoinChallenge }
   }
 
   async function getSiweMsg(account: ethers.HDNodeWallet): Promise<string> {
@@ -22,20 +22,21 @@ describe('MessageBox', function () {
     }).toMessage()
   }
 
-  it('Should set message authenticated', async function () {
+  it('Should get address and secret key authenticated', async function () {
     // Skip this test on non-sapphire chains.
     // On-chain encryption and/or signing required for SIWE.
     if ((await ethers.provider.getNetwork()).chainId == 1337n) {
       this.skip()
     }
 
-    const { messageBox } = await deployMessageBox()
+    const { bitcoinChallenge } = await deployBitcoinChallenge()
 
-    await messageBox.setMessage('hello world')
+    console.log(await bitcoinChallenge.getBitcoinAddress())
+    await expect(await bitcoinChallenge.getBitcoinAddress()).to.be.not.null
 
     // Check, if author is correctly set.
-    expect(await messageBox.author()).to.equal(await (await ethers.provider.getSigner(0)).getAddress())
-    // Author should be able to read a message.
+    expect(await bitcoinChallenge.owner()).to.equal(await (await ethers.provider.getSigner(0)).getAddress())
+    // Owner should be able to read secret key.
     const accounts = config.networks.hardhat.accounts
     const account = ethers.HDNodeWallet.fromMnemonic(
       ethers.Mnemonic.fromPhrase(accounts.mnemonic),
@@ -43,17 +44,18 @@ describe('MessageBox', function () {
     )
     const siweMsg = await getSiweMsg(account)
     const sig = ethers.Signature.from(await account.signMessage(siweMsg))
-    const bearer = await messageBox.login(siweMsg, sig)
-    await expect(await messageBox.message(bearer)).to.be.equal('hello world')
+    const bearer = await bitcoinChallenge.login(siweMsg, sig)
+    await expect(await bitcoinChallenge.getSecretKey(bearer)).to.be.not.null
+    console.log(await bitcoinChallenge.getSecretKey(bearer))
 
-    // Anyone else trying to read the message should fail.
+    // Anyone else trying to read the secret key should fail.
     const acc2 = ethers.HDNodeWallet.fromMnemonic(
       ethers.Mnemonic.fromPhrase(accounts.mnemonic),
       accounts.path + '/1'
     )
     const siweMsg2 = await getSiweMsg(acc2)
     const sig2 = ethers.Signature.from(await acc2.signMessage(siweMsg2))
-    const bearer2 = await messageBox.login(siweMsg2, sig2)
-    await expect(messageBox.message(bearer2)).to.be.reverted
+    const bearer2 = await bitcoinChallenge.login(siweMsg2, sig2)
+    await expect(bitcoinChallenge.getSecretKey(bearer2)).to.be.reverted
   })
 })

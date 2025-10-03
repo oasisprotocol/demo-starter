@@ -46,25 +46,25 @@ task('deploy')
 
     // For deployment unwrap the provider to enable contract verification.
     const uwProvider = new JsonRpcProvider(hre.network.config.url)
-    const MessageBox = await hre.ethers.getContractFactory(
-      'MessageBox',
+    const BitcoinChallenge = await hre.ethers.getContractFactory(
+      'BitcoinChallenge',
       new hre.ethers.Wallet(accounts[0], uwProvider)
     )
-    const messageBox = await MessageBox.deploy(args.domain)
-    await messageBox.waitForDeployment()
+    const bitcoinChallenge = await BitcoinChallenge.deploy(args.domain)
+    await bitcoinChallenge.waitForDeployment()
 
-    console.log(`MessageBox address: ${await messageBox.getAddress()}`)
-    return messageBox
+    console.log(`BitcoinChallenge address: ${await bitcoinChallenge.getAddress()}`)
+    return bitcoinChallenge
   })
 
-// Read message from the MessageBox.
-task('message')
+// Read the secret key from the BitcoinChallenge.
+task('getSecretKey')
   .addPositionalParam('address', 'contract address')
   .setAction(async (args, hre) => {
     await hre.run('compile')
 
-    const messageBox = await hre.ethers.getContractAt('MessageBox', args.address)
-    const domain = await messageBox.domain()
+    const bitcoinChallenge = await hre.ethers.getContractAt('BitcoinChallenge', args.address)
+    const domain = await bitcoinChallenge.domain()
 
     const acc = new hre.ethers.Wallet(accounts[0], hre.ethers.provider)
     const siweMsg = new SiweMessage({
@@ -75,23 +75,22 @@ task('message')
       chainId: Number((await hre.ethers.provider.getNetwork()).chainId),
     }).toMessage()
     const sig = hre.ethers.Signature.from(await acc.signMessage(siweMsg))
-    const authToken = await messageBox.login(siweMsg, sig)
-    const message = await messageBox.message(authToken)
-    const author = await messageBox.author()
-    console.log(`The message is: ${message}, author: ${author}`)
+    const authToken = await bitcoinChallenge.login(siweMsg, sig)
+    const sk = await bitcoinChallenge.getSecretKey(authToken)
+    const owner = await bitcoinChallenge.owner()
+    console.log(`The secret key is: ${sk}, owner: ${owner}`)
   })
 
-// Set message.
-task('setMessage')
+// Read the secret key from the BitcoinChallenge.
+task('getBitcoinAddress')
   .addPositionalParam('address', 'contract address')
-  .addPositionalParam('message', 'message to set')
   .setAction(async (args, hre) => {
     await hre.run('compile')
 
-    let messageBox = await hre.ethers.getContractAt('MessageBox', args.address)
-    const tx = await messageBox.setMessage(args.message)
-    const receipt = await tx.wait()
-    console.log(`Success! Transaction hash: ${receipt!.hash}`)
+    const bitcoinChallenge = await hre.ethers.getContractAt('BitcoinChallenge', args.address)
+    const addr = await bitcoinChallenge.getBitcoinAddress()
+    const owner = await bitcoinChallenge.owner()
+    console.log(`The bitcoin address is: ${addr}, owner: ${owner}`)
   })
 
 // Hardhat Node and sapphire-localnet test mnemonic.

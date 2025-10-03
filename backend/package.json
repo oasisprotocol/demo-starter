@@ -27,6 +27,7 @@
     "build:esm": "tsc -p tsconfig/esm.json",
     "build": "npm-run-all build:compile --parallel build:cjs build:esm",
     "test": "hardhat test",
+    "deploy": "hardhat deploy",
     "prepublishOnly": "pnpm build"
   },
   "exports": {
