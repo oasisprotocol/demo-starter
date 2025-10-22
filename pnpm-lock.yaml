@@ -143,7 +143,7 @@ importers:
         version: 5.45.1(react@18.3.1)
       playwright-core:
         specifier: '>1.0'
-        version: 1.52.0
+        version: 1.56.1
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -167,11 +167,11 @@ importers:
         version: 2.15.4(@tanstack/query-core@5.45.0)(@tanstack/react-query@5.45.1(react@18.3.1))(@types/react@18.3.23)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))(zod@3.22.4)
     devDependencies:
       '@playwright/test':
-        specifier: ^1.47.2
-        version: 1.52.0
+        specifier: ^1.56.1
+        version: 1.56.1
       '@tenkeylabs/dappwright':
-        specifier: ^2.9.1
-        version: 2.11.0(playwright-core@1.52.0)
+        specifier: ^2.11.3
+        version: 2.11.3(playwright-core@1.56.1)
       '@types/node':
         specifier: ^18.14.0
         version: 18.19.105
@@ -890,8 +890,8 @@ packages:
     resolution: {integrity: sha512-IHnV6A+zxU7XwmKFinmYjUcwlyK9+xkG3/s9KcQhI9BjQKycrJ1JRO+FbNYPwZiPKW3je/DR0k7w8/gLa5eaxQ==}
     deprecated: 'The package is now available as "qr": npm install qr'
 
-  '@playwright/test@1.52.0':
-    resolution: {integrity: sha512-uh6W7sb55hl7D6vsAeA+V2p5JnlAqzhqFyF0VcJkKZXkgnFcVG9PziERRHQfPLfNGx1C292a4JqbWzhR8L4R1g==}
+  '@playwright/test@1.56.1':
+    resolution: {integrity: sha512-vSMYtL/zOcFpvJCW71Q/OEGQb7KYBPAdKh35WNSkaZA75JlAO8ED8UN6GUNTm3drWomcbcqRPFqQbLae8yBTdg==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -1302,8 +1302,8 @@ packages:
     peerDependencies:
       react: ^18.0.0
 
-  '@tenkeylabs/dappwright@2.11.0':
-    resolution: {integrity: sha512-BZARAijwvVtW65ODPKic+487oW8BD4nwzfGYQtgdl/iGi6dGXxvK1eNAetK9NyYb42Kfhy9C1obTy5JHqweYVg==}
+  '@tenkeylabs/dappwright@2.11.3':
+    resolution: {integrity: sha512-b37afn9H94MyMZj6RWFggUtVjfi+uvTCm2Z6do6iTZCv/AKtLQcnBGNcS434mKp2HDTfWjp9XaQWwF8Ln8Yk8Q==}
     engines: {node: '>=20'}
     peerDependencies:
       playwright-core: '>1.0'
@@ -3570,13 +3570,13 @@ packages:
     resolution: {integrity: sha512-NPE8TDbzl/3YQYY7CSS228s3g2ollTFnc+Qi3tqmqJp9Vg2ovUpixcJEo2HJScN2Ez+kEaal6y70c0ehqJBJeA==}
     engines: {node: '>=10'}
 
-  playwright-core@1.52.0:
-    resolution: {integrity: sha512-l2osTgLXSMeuLZOML9qYODUQoPPnUsKsb5/P6LJ2e6uPKXUdPK5WYhN4z03G+YNbWmGDY4YENauNu4ZKczreHg==}
+  playwright-core@1.56.1:
+    resolution: {integrity: sha512-hutraynyn31F+Bifme+Ps9Vq59hKuUCz7H1kDOcBs+2oGguKkWTU50bBWrtz34OUWmIwpBTWDxaRPXrIXkgvmQ==}
     engines: {node: '>=18'}
     hasBin: true
 
-  playwright@1.52.0:
-    resolution: {integrity: sha512-JAwMNMBlxJ2oD1kce4KPtMkDeKGHQstdpFPcPH3maElAXon/QZeTvtsfXmTMRyO9TslfoYOXkSsvao2nE1ilTw==}
+  playwright@1.56.1:
+    resolution: {integrity: sha512-aFi5B0WovBHTEvpM3DzXTUaeN6eN0qWnTkKx4NQaH4Wvcmc153PdaY2UBdSYKaGYw+UyWXSVyxDUg5DoPEttjw==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -5554,9 +5554,9 @@ snapshots:
 
   '@paulmillr/qr@0.2.1': {}
 
-  '@playwright/test@1.52.0':
+  '@playwright/test@1.56.1':
     dependencies:
-      playwright: 1.52.0
+      playwright: 1.56.1
 
   '@rainbow-me/rainbowkit@2.2.5(@tanstack/react-query@5.45.1(react@18.3.1))(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))(wagmi@2.15.4(@tanstack/query-core@5.45.0)(@tanstack/react-query@5.45.1(react@18.3.1))(@types/react@18.3.23)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))(zod@3.22.4))':
     dependencies:
@@ -6144,10 +6144,10 @@ snapshots:
       '@tanstack/query-core': 5.45.0
       react: 18.3.1
 
-  '@tenkeylabs/dappwright@2.11.0(playwright-core@1.52.0)':
+  '@tenkeylabs/dappwright@2.11.3(playwright-core@1.56.1)':
     dependencies:
       node-stream-zip: 1.15.0
-      playwright-core: 1.52.0
+      playwright-core: 1.56.1
 
   '@tsconfig/node10@1.0.11': {}
 
@@ -9170,11 +9170,11 @@ snapshots:
     dependencies:
       find-up: 5.0.0
 
-  playwright-core@1.52.0: {}
+  playwright-core@1.56.1: {}
 
-  playwright@1.52.0:
+  playwright@1.56.1:
     dependencies:
-      playwright-core: 1.52.0
+      playwright-core: 1.56.1
     optionalDependencies:
       fsevents: 2.3.2
 
