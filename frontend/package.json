@@ -30,8 +30,8 @@
     "wagmi": "^2.14.11"
   },
   "devDependencies": {
-    "@playwright/test": "^1.47.2",
-    "@tenkeylabs/dappwright": "^2.9.1",
+    "@playwright/test": "^1.56.1",
+    "@tenkeylabs/dappwright": "^2.11.3",
     "@types/node": "^18.14.0",
     "@types/react": "^18.3.10",
     "@types/react-dom": "^18.3.0",
