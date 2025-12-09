@@ -8,6 +8,7 @@ interface ImportMetaEnv {
   VITE_NETWORK: string
   VITE_WEB3_GATEWAY: string
   VITE_MESSAGE_BOX_ADDR: string
+  VITE_WALLET_CONNECT_PROJECT_ID: string
 }
 
 interface ImportMeta {
