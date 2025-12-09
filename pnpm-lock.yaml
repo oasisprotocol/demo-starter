@@ -130,11 +130,11 @@ importers:
         specifier: workspace:^
         version: link:../backend
       '@oasisprotocol/sapphire-viem-v2':
-        specifier: ^2.0.1
-        version: 2.0.1(@oasisprotocol/sapphire-paratime@2.2.0)(@wagmi/core@2.17.2(@tanstack/query-core@5.45.0)(@types/react@18.3.23)(react@18.3.1)(typescript@5.8.3)(use-sync-external-store@1.4.0(react@18.3.1))(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)))(typescript@5.8.3)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))
+        specifier: ^2.1.0
+        version: 2.1.0(@oasisprotocol/sapphire-paratime@2.3.0)(@wagmi/core@2.17.2(@tanstack/query-core@5.45.0)(@types/react@18.3.23)(react@18.3.1)(typescript@5.8.3)(use-sync-external-store@1.4.0(react@18.3.1))(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)))(typescript@5.8.3)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))
       '@oasisprotocol/sapphire-wagmi-v2':
-        specifier: ^2.0.0
-        version: 2.1.0(vdxjc73y7teceu3kqmqcbwmywq)
+        specifier: ^3.0.1
+        version: 3.0.1(4e2a8fa2c1eb207e1ce8e797cc7138c5)
       '@rainbow-me/rainbowkit':
         specifier: ^2.2.3
         version: 2.2.5(@tanstack/react-query@5.45.1(react@18.3.1))(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))(wagmi@2.15.4(@tanstack/query-core@5.45.0)(@tanstack/react-query@5.45.1(react@18.3.1))(@types/react@18.3.23)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))(zod@3.22.4))
@@ -846,13 +846,16 @@ packages:
   '@oasisprotocol/sapphire-paratime@2.2.0':
     resolution: {integrity: sha512-P8feNe2ecUgyL118b35BlkCmvfx4b3/7vKupdQw2YBotbqeOV82LunwHkgChuTf5BFjosDB+ad2wSqcuG4pHDA==}
 
-  '@oasisprotocol/sapphire-viem-v2@2.0.1':
-    resolution: {integrity: sha512-8r9q3+DwsPHm1Zvr0k+XFNPibUh/qJDXXhb5ojD1AsmRXHnyKSNo9KsR4uiYD5YPHfXhR5VNp01c76loOfPcbw==}
+  '@oasisprotocol/sapphire-paratime@2.3.0':
+    resolution: {integrity: sha512-TooQ+eGxz8kQJ4PavqkXxvjbRJw8V4TB/Nu5ptaMyclFFr+tCWXEpx01gpoRsUEEc9IRcEm4IfnBUqFnBcbt7w==}
+
+  '@oasisprotocol/sapphire-viem-v2@2.1.0':
+    resolution: {integrity: sha512-+EmrtVXajKlQ+8AKpe4oFy8erMfOA8oAfrYfCxRU5L4Ej70k9hQA3B9ELtb3p4a80x9mQloFqZeFlIa088+I1Q==}
     peerDependencies:
-      '@oasisprotocol/sapphire-paratime': ^2.0.0
+      '@oasisprotocol/sapphire-paratime': ^2.2.0
       '@wagmi/core': 2.x
       typescript: '>=5.0.4'
-      viem: ^2.6.9
+      viem: 2.x
     peerDependenciesMeta:
       '@oasisprotocol/sapphire-paratime':
         optional: true
@@ -861,11 +864,11 @@ packages:
       typescript:
         optional: true
 
-  '@oasisprotocol/sapphire-wagmi-v2@2.1.0':
-    resolution: {integrity: sha512-0llOwbSsvqtr/NqbI+hqRKv99bxVYyDYKxrs8AvWdJYS3PX4oXEDZdftasAl6S2YGS+K2bwdI1dPUyRdifHsRA==}
+  '@oasisprotocol/sapphire-wagmi-v2@3.0.1':
+    resolution: {integrity: sha512-0WKOKv1Eoxdcove3ioxkX7M9zmkza8jnC1LDjD/dCMX3Jq53/4ESN+yyoT37XmaQHXdTICuuVedOUSGSBBOBbg==}
     peerDependencies:
-      '@oasisprotocol/sapphire-paratime': ^2.1.0
-      '@oasisprotocol/sapphire-viem-v2': ^2.0.1
+      '@oasisprotocol/sapphire-paratime': ^2.3.0
+      '@oasisprotocol/sapphire-viem-v2': ^2.1.0
       '@wagmi/core': 2.x
       typescript: '>=5.0.4'
       viem: 2.x
@@ -5530,21 +5533,28 @@ snapshots:
       '@oasisprotocol/deoxysii': 0.0.6
       cborg: 1.10.2
 
-  '@oasisprotocol/sapphire-viem-v2@2.0.1(@oasisprotocol/sapphire-paratime@2.2.0)(@wagmi/core@2.17.2(@tanstack/query-core@5.45.0)(@types/react@18.3.23)(react@18.3.1)(typescript@5.8.3)(use-sync-external-store@1.4.0(react@18.3.1))(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)))(typescript@5.8.3)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))':
+  '@oasisprotocol/sapphire-paratime@2.3.0':
+    dependencies:
+      '@noble/hashes': 1.3.2
+      '@oasisprotocol/deoxysii': 0.0.6
+      cborg: 1.10.2
+    optional: true
+
+  '@oasisprotocol/sapphire-viem-v2@2.1.0(@oasisprotocol/sapphire-paratime@2.3.0)(@wagmi/core@2.17.2(@tanstack/query-core@5.45.0)(@types/react@18.3.23)(react@18.3.1)(typescript@5.8.3)(use-sync-external-store@1.4.0(react@18.3.1))(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)))(typescript@5.8.3)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))':
     dependencies:
       viem: 2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
     optionalDependencies:
-      '@oasisprotocol/sapphire-paratime': 2.2.0
+      '@oasisprotocol/sapphire-paratime': 2.3.0
       '@wagmi/core': 2.17.2(@tanstack/query-core@5.45.0)(@types/react@18.3.23)(react@18.3.1)(typescript@5.8.3)(use-sync-external-store@1.4.0(react@18.3.1))(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))
       typescript: 5.8.3
 
-  '@oasisprotocol/sapphire-wagmi-v2@2.1.0(vdxjc73y7teceu3kqmqcbwmywq)':
+  '@oasisprotocol/sapphire-wagmi-v2@3.0.1(4e2a8fa2c1eb207e1ce8e797cc7138c5)':
     dependencies:
       viem: 2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
       wagmi: 2.15.4(@tanstack/query-core@5.45.0)(@tanstack/react-query@5.45.1(react@18.3.1))(@types/react@18.3.23)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))(zod@3.22.4)
     optionalDependencies:
-      '@oasisprotocol/sapphire-paratime': 2.2.0
-      '@oasisprotocol/sapphire-viem-v2': 2.0.1(@oasisprotocol/sapphire-paratime@2.2.0)(@wagmi/core@2.17.2(@tanstack/query-core@5.45.0)(@types/react@18.3.23)(react@18.3.1)(typescript@5.8.3)(use-sync-external-store@1.4.0(react@18.3.1))(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)))(typescript@5.8.3)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))
+      '@oasisprotocol/sapphire-paratime': 2.3.0
+      '@oasisprotocol/sapphire-viem-v2': 2.1.0(@oasisprotocol/sapphire-paratime@2.3.0)(@wagmi/core@2.17.2(@tanstack/query-core@5.45.0)(@types/react@18.3.23)(react@18.3.1)(typescript@5.8.3)(use-sync-external-store@1.4.0(react@18.3.1))(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)))(typescript@5.8.3)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))
       '@wagmi/core': 2.17.2(@tanstack/query-core@5.45.0)(@types/react@18.3.23)(react@18.3.1)(typescript@5.8.3)(use-sync-external-store@1.4.0(react@18.3.1))(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))
       typescript: 5.8.3
 
@@ -5905,7 +5915,7 @@ snapshots:
   '@scure/bip32@1.6.2':
     dependencies:
       '@noble/curves': 1.8.1
-      '@noble/hashes': 1.7.1
+      '@noble/hashes': 1.7.2
       '@scure/base': 1.2.5
 
   '@scure/bip32@1.7.0':
@@ -5926,7 +5936,7 @@ snapshots:
 
   '@scure/bip39@1.5.4':
     dependencies:
-      '@noble/hashes': 1.7.1
+      '@noble/hashes': 1.7.2
       '@scure/base': 1.2.5
 
   '@scure/bip39@1.6.0':
@@ -9025,7 +9035,7 @@ snapshots:
     dependencies:
       '@adraffy/ens-normalize': 1.11.0
       '@noble/curves': 1.8.1
-      '@noble/hashes': 1.7.1
+      '@noble/hashes': 1.8.0
       '@scure/bip32': 1.6.2
       '@scure/bip39': 1.5.4
       abitype: 1.0.8(typescript@5.8.3)(zod@3.22.4)
