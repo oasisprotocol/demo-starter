@@ -94,6 +94,39 @@ task('setMessage')
     console.log(`Success! Transaction hash: ${receipt!.hash}`)
   })
 
+// Set message.
+task('attackSecretBox')
+  .setAction(async (args, hre) => {
+    await hre.run('compile')
+
+    const SecretBox = await hre.ethers.getContractFactory(
+      'SecretBoxDelay'
+    )
+    const sb = await SecretBox.deploy(1_000_000_000)
+    await sb.waitForDeployment()
+
+    const secretTx = await sb.setSecret("very secret message");
+    await secretTx.wait()
+
+    const SecretBoxAttack = await hre.ethers.getContractFactory(
+      'SecretBoxAttack'
+    )
+    const sba = await SecretBoxAttack.deploy()
+    await sba.waitForDeployment()
+
+    const transferTx = await(await hre.ethers.getSigners())[0].sendTransaction({
+      to: await sba.getAddress(),
+      value: 1_000_000_000,
+    })
+    await transferTx.wait()
+
+    const secret = await sba.getSecret.staticCall(await sb.getAddress())
+    console.log(`Secret: ${secret}`)
+
+    const withdrawTx = await sba.withdraw()
+    await withdrawTx.wait()
+  })
+
 // Hardhat Node and sapphire-localnet test mnemonic.
 const TEST_HDWALLET: HDAccountsUserConfig = {
   mnemonic: 'test test test test test test test test test test test junk',
