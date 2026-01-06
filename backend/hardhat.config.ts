@@ -2,6 +2,7 @@ import { promises as fs } from 'fs'
 import path from 'path'
 
 import '@nomicfoundation/hardhat-ethers'
+import '@nomicfoundation/hardhat-verify'
 import '@oasisprotocol/sapphire-hardhat'
 import '@typechain/hardhat'
 import canonicalize from 'canonicalize'
@@ -12,6 +13,26 @@ import { HardhatUserConfig, task } from 'hardhat/config'
 import { SiweMessage } from 'siwe'
 import 'solidity-coverage'
 import { HDAccountsUserConfig } from 'hardhat/types'
+
+declare module 'hardhat/config' {
+  interface HardhatUserConfig {
+    sourcify?: {
+      enabled: boolean
+    }
+    etherscan?: {
+      enabled?: boolean
+      apiKey?: Record<string, string>
+      customChains?: Array<{
+        network: string
+        chainId: number
+        urls: {
+          apiURL: string
+          browserURL: string
+        }
+      }>
+    }
+  }
+}
 
 const TASK_EXPORT_ABIS = 'export-abis'
 
@@ -156,6 +177,14 @@ const config: HardhatUserConfig = {
   mocha: {
     require: ['ts-node/register/files'],
     timeout: 50_000,
+  },
+  sourcify: {
+    enabled: true,
+  },
+  etherscan: {
+    enabled: false,
+    apiKey: {},
+    customChains: []
   },
 }
 

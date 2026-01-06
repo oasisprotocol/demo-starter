@@ -66,6 +66,20 @@ npx hardhat deploy yourdomain.com --network sapphire-testnet
 npx hardhat deploy yourdomain.com --network sapphire
 ```
 
+### Contract Verification
+
+After deployment, you can verify your contract on Sourcify:
+
+```shell
+npx hardhat verify --network sapphire-testnet <CONTRACT_ADDRESS> "<CONSTRUCTOR_ARGS>"
+```
+
+For example, to verify the MessageBox contract deployed for `yourdomain.com`:
+
+```shell
+npx hardhat verify --network sapphire-testnet 0x1234...abcd "yourdomain.com"
+```
+
 [Sapphire Localnet]: https://github.com/oasisprotocol/oasis-web3-gateway/pkgs/container/sapphire-localnet
 
 ## Frontend
