@@ -46,6 +46,16 @@ export const Web3AuthContextProvider: FC<PropsWithChildren> = ({ children }) => 
     }
   }, [retrievedAuthInfo])
 
+  useEffect(() => {
+    // Reset auth state when address changes
+    setState(prevState => ({
+      ...prevState,
+      authInfo: null,
+      signature: null,
+      siweMessage: null,
+    }))
+  }, [address])
+
   const fetchAuthInfo = async (): Promise<void> => {
     const { authInfo } = state
 

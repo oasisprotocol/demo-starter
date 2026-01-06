@@ -64,8 +64,10 @@ export const HomePage: FC = () => {
         message: retrievedMessage!,
         author: retrievedAuthor!,
       })
+    } else {
+      setMessage(null)
     }
-  }, [retrievedAuthor, retrievedMessage])
+  }, [retrievedAuthor, retrievedMessage, authInfo])
 
   const fetchMessage = async () => {
     setMessageError(null)

@@ -39,7 +39,7 @@ test.beforeEach(async ({ page }) => {
 test('set and view message', async ({ wallet, page }) => {
   // Load page
   await page.getByTestId('rk-connect-button').click()
-  await page.getByTestId('rk-wallet-option-injected-sapphire').click()
+  await page.getByTestId('rk-wallet-option-metamask-sapphire-rk').click()
   await wallet.approve()
 
   // Set a message
