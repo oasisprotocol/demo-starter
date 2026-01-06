@@ -173,8 +173,8 @@ importers:
         specifier: ^1.56.1
         version: 1.56.1
       '@tenkeylabs/dappwright':
-        specifier: ^2.11.3
-        version: 2.11.3(playwright-core@1.56.1)
+        specifier: ^2.13.1
+        version: 2.13.1(playwright-core@1.56.1)
       '@types/node':
         specifier: ^18.14.0
         version: 18.19.105
@@ -1313,8 +1313,8 @@ packages:
     peerDependencies:
       react: ^18.0.0
 
-  '@tenkeylabs/dappwright@2.11.3':
-    resolution: {integrity: sha512-b37afn9H94MyMZj6RWFggUtVjfi+uvTCm2Z6do6iTZCv/AKtLQcnBGNcS434mKp2HDTfWjp9XaQWwF8Ln8Yk8Q==}
+  '@tenkeylabs/dappwright@2.13.1':
+    resolution: {integrity: sha512-B2zCz2UP6DfoITqqnYB5dN6jNoDkaZH4DP21Z+7hK4YvWjCA3QBX6CYZ/B75/7vvoWmrASZ3gXzos7EqY83pvg==}
     engines: {node: '>=20'}
     peerDependencies:
       playwright-core: '>1.0'
@@ -6207,7 +6207,7 @@ snapshots:
       '@tanstack/query-core': 5.45.0
       react: 18.3.1
 
-  '@tenkeylabs/dappwright@2.11.3(playwright-core@1.56.1)':
+  '@tenkeylabs/dappwright@2.13.1(playwright-core@1.56.1)':
     dependencies:
       node-stream-zip: 1.15.0
       playwright-core: 1.56.1
