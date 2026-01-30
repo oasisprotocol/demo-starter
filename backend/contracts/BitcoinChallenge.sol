@@ -28,10 +28,6 @@ contract BitcoinChallenge is SiweAuth {
         uint256 y;
     }
 
-    uint256 constant P = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
-    uint256 constant GX = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798;
-    uint256 constant GY = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8;
-
     bytes constant B58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
     bytes32 private secretKey;
@@ -59,13 +55,6 @@ contract BitcoinChallenge is SiweAuth {
             Sapphire.SigningAlg.Secp256k1PrehashedSha256,
             abi.encodePacked(secretKey)
         );
-
-//        Point memory G = Point(GX, GY);
-//        uint256 sk = uint256(secretKey);
-//        Point memory pubPoint = pointMul(sk, G);
-//
-//        bytes memory pkBytes = pointToBytes(pubPoint);
-
         bytes32 hash = sha256(pkBytes);
         bytes20 hash160 = ripemd160(abi.encodePacked(hash));
 
@@ -120,84 +109,22 @@ contract BitcoinChallenge is SiweAuth {
         return string(out);
     }
 
-    function pointAdd(Point memory p1, Point memory p2) public pure returns (Point memory) {
-        if (p1.x == 0 && p1.y == 0) return p2;
-        if (p2.x == 0 && p2.y == 0) return p1;
-
-        uint256 l;
-        if (p1.x == p2.x && p1.y == p2.y) {
-            l = mulmod(mulmod(3, mulmod(p1.x, p1.x, P), P), modInverse(mulmod(2, p1.y, P), P), P);
-        } else {
-            l = mulmod(submod(p2.y, p1.y, P), modInverse(submod(p2.x, p1.x, P), P), P);
-        }
-
-        uint256 newX = submod(submod(mulmod(l, l, P), p1.x, P), p2.x, P);
-        uint256 newY = submod(mulmod(l, submod(p1.x, newX, P), P), p1.y, P);
-
-        return Point(newX, newY);
-    }
-
-    function pointMul(uint256 scalar, Point memory point) public pure returns (Point memory) {
-        Point memory result = Point(0, 0);
-        Point memory addend = point;
-
-        for (uint i = 0; i < 256; i++) {
-            if ((scalar >> i) & 1 == 1) {
-                result = pointAdd(result, addend);
-            }
-            addend = pointAdd(addend, addend);
-        }
-
-        return result;
-    }
-
-    function modInverse(uint256 a, uint256 m) public pure returns (uint256) {
-        return modExp(a, m - 2, m);
-    }
-
-    function modExp(uint256 base, uint256 exp, uint256 mod) public pure returns (uint256) {
-        uint256 result = 1;
-        base = base % mod;
-        while (exp > 0) {
-            if (exp % 2 == 1) {
-                result = mulmod(result, base, mod);
-            }
-            exp = exp / 2;
-            base = mulmod(base, base, mod);
-        }
-        return result;
-    }
-
-    function submod(uint256 a, uint256 b, uint256 mod) public pure returns (uint256) {
-        return addmod(a, mod - b, mod);
-    }
-
-    function pointToBytes(Point memory point) public pure returns (bytes memory) {
-        bytes memory result = new bytes(65);
-        result[0] = 0x04;
-
-        for (uint i = 0; i < 32; i++) {
-            result[i + 1] = bytes1(uint8(point.x >> (8 * (31 - i))));
-            result[i + 33] = bytes1(uint8(point.y >> (8 * (31 - i))));
-        }
-
-        return result;
-    }
-
     function getWif(bytes32 privkey) public pure returns (string memory) {
-        bytes memory wif = new bytes(33);
+        bytes memory wif = new bytes(34);
         wif[0] = 0x80;
         for (uint i = 0; i < 32; i++) {
             wif[i + 1] = privkey[i];
         }
 
+        wif[33] = 0x01;
         bytes32 checksum = sha256(abi.encodePacked(sha256(wif)));
-        bytes memory fullWif = new bytes(37);
+        bytes memory fullWif = new bytes(38);
         for (uint i = 0; i < 33; i++) {
             fullWif[i] = wif[i];
         }
+        fullWif[33] = 0x01;
         for (uint i = 0; i < 4; i++) {
-            fullWif[i + 33] = checksum[i];
+            fullWif[i + 34] = checksum[i];
         }
 
         return b58Encode(fullWif);
