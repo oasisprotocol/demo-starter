@@ -7,8 +7,8 @@
   "module": "./lib/esm/src/index.js",
   "types": "./lib/cjs/src/index.d.ts",
   "engines": {
-    "node": ">=18",
-    "pnpm": ">=8"
+    "node": ">=24",
+    "pnpm": ">=10"
   },
   "files": [
     "contracts",
