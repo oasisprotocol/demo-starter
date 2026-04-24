@@ -3,10 +3,10 @@ name: ci-test
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
   test-backend:
@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: 20
 
-      - uses: pnpm/action-setup@v2.4.0
+      - uses: pnpm/action-setup@v6
         name: Install pnpm
         id: pnpm-install
         with:
@@ -61,6 +61,8 @@ jobs:
         ports:
           - 8545:8545
           - 8546:8546
+        env:
+          OASIS_DOCKER_START_EXPLORER: no
         options: >-
           --rm
           --health-cmd="test -f /CONTAINER_READY"
@@ -70,15 +72,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 18
+          node-version: 24
 
-      - uses: pnpm/action-setup@v2.4.0
+      - uses: pnpm/action-setup@v6
         name: Install pnpm
         id: pnpm-install
         with:
-          version: 8
+          version: 10
           run_install: false
 
       - name: Get pnpm store directory
@@ -105,7 +107,7 @@ jobs:
 
       - name: Test backend
         working-directory: backend
-        run: pnpm test -- --network sapphire-localnet
+        run: pnpm test --network sapphire-localnet
 
   test-frontend:
     runs-on: ubuntu-latest
@@ -114,15 +116,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 18
+          node-version: 24
 
-      - uses: pnpm/action-setup@v2.4.0
+      - uses: pnpm/action-setup@v6
         name: Install pnpm
         id: pnpm-install
         with:
-          version: 8
+          version: 10
           run_install: false
 
       - name: Get pnpm store directory
