@@ -23,18 +23,20 @@ describe('MessageBox', function () {
   }
 
   it('Should set message authenticated', async function () {
-    // Skip this test on non-sapphire chains.
-    // On-chain encryption and/or signing required for SIWE.
-    if ((await ethers.provider.getNetwork()).chainId == 1337n) {
+    const { messageBox } = await deployMessageBox()
+
+    const tx = await messageBox.setMessage('hello world')
+    await tx.wait()
+
+    // Check, if author is correctly set.
+    expect(await messageBox.author()).to.equal(await(await ethers.provider.getSigner(0)).getAddress())
+
+    // Skip this test on non-sapphire chains because SIWE requires on-chain encryption and signing.
+    const chainId = (await ethers.provider.getNetwork()).chainId
+    if (chainId < 0x5afd || chainId > 0x5aff) {
       this.skip()
     }
 
-    const { messageBox } = await deployMessageBox()
-
-    await messageBox.setMessage('hello world')
-
-    // Check, if author is correctly set.
-    expect(await messageBox.author()).to.equal(await (await ethers.provider.getSigner(0)).getAddress())
     // Author should be able to read a message.
     const accounts = config.networks.hardhat.accounts
     const account = ethers.HDNodeWallet.fromMnemonic(

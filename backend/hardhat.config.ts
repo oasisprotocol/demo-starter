@@ -151,7 +151,7 @@ const config: HardhatUserConfig = {
     },
   },
   solidity: {
-    version: '0.8.16',
+    version: '0.8.24',
     settings: {
       optimizer: {
         enabled: true,
@@ -184,7 +184,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     enabled: false,
     apiKey: {},
-    customChains: []
+    customChains: [],
   },
 }
 
